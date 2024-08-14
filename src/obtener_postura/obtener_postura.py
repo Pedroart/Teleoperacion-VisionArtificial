@@ -7,6 +7,7 @@ import plot_pose_live
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import time
+from std_msgs.msg import String
 
 class imagen_postura:
     def __init__(self) -> None:
@@ -28,28 +29,29 @@ class imagen_postura:
 
 
 def talker():
-    #setup plot
-    #fig = plt.figure()
-    #ax = fig.add_subplot(111, projection="3d")
-
     cap = cv2.VideoCapture('/home/art/dev_ws/src/Teleoperacion-VisionArtificial/src/obtener_postura/test.mp4') 
     img_postura = imagen_postura()
-    while cap.isOpened():
+    
+    pub = rospy.Publisher('chatter', String, queue_size=10)
+    rospy.init_node('talker', anonymous=True)
+    rate = rospy.Rate(20) # 20hz
+
+    while not rospy.is_shutdown() and cap.isOpened():
         inicio = time.time()
         success, image = cap.read()
         if not success:
-            print("Ignoring empty camera frame.")
-            # If loading a video, use 'break' instead of 'continue'.
+            rospy.logwarn("Ignoring empty camera frame.")
             break
         
         image.flags.writeable = False
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results_pose = img_postura.pose.process(image)
 
-        #plot_pose_live.plot_world_landmarks(ax, results_pose.pose_world_landmarks)
-        
         fin = time.time()
-        print(fin-inicio)
+        rospy.loginfo(fin-inicio)
+
+        pub.publish(fin-inicio)
+        rate.sleep()
     cap.release()
 
 if __name__ == '__main__':
