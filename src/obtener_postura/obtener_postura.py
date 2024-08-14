@@ -4,7 +4,9 @@ import mediapipe as mp
 import concurrent.futures
 import rospy
 import plot_pose_live
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+import time
 
 class imagen_postura:
     def __init__(self) -> None:
@@ -33,6 +35,7 @@ def talker():
     cap = cv2.VideoCapture('test.mp4') 
     img_postura = imagen_postura()
     while cap.isOpened():
+        inicio = time.time()
         success, image = cap.read()
         if not success:
             print("Ignoring empty camera frame.")
@@ -52,13 +55,13 @@ def talker():
             results_pose = futuro_algoritmo1.result()
             results_hands = futuro_algoritmo2.result()
             #concurrent.futures.wait([futuro_algoritmo1, futuro_algoritmo2])
-        
+        '''
         img_postura.mp_drawing.draw_landmarks(
             image,
             results_pose.pose_landmarks,
             img_postura.mp_pose.POSE_CONNECTIONS,
             landmark_drawing_spec=img_postura.mp_drawing_styles.get_default_pose_landmarks_style())
-        
+        '''
         plot_pose_live.plot_world_landmarks(ax, results_pose.pose_world_landmarks)
 
         # Draw the hand annotations on the image.
@@ -74,7 +77,8 @@ def talker():
                     img_postura.mp_drawing_styles.get_default_hand_connections_style())
 
         # Flip the image horizontally for a selfie-view display.
-        
+        fin = time.time()
+        print(fin-inicio)
         image = cv2.resize(image, (640, 480))
         cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
         if cv2.waitKey(1) & 0xFF == 27:
