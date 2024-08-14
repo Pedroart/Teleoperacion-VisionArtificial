@@ -68,10 +68,12 @@ def talker():
 
         # Flip the image horizontally for a selfie-view display.
         
+        image = cv2.resize(image, (640, 480))
         cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
-        if cv2.waitKey(5) & 0xFF == 27:
+        if cv2.waitKey(1) & 0xFF == 27:
             break
     cap.release()
+
 if __name__ == '__main__':
     try:
         talker()
