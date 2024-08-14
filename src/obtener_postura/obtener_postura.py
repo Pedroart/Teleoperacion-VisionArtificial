@@ -3,6 +3,8 @@ import cv2
 import mediapipe as mp
 import concurrent.futures
 import rospy
+import plot_pose_live
+import matplotlib.pyplot as plt
 
 class imagen_postura:
     def __init__(self) -> None:
@@ -24,6 +26,10 @@ class imagen_postura:
 
 
 def talker():
+    # setup plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
+
     cap = cv2.VideoCapture('test.mp4') 
     img_postura = imagen_postura()
     while cap.isOpened():
@@ -53,6 +59,7 @@ def talker():
             img_postura.mp_pose.POSE_CONNECTIONS,
             landmark_drawing_spec=img_postura.mp_drawing_styles.get_default_pose_landmarks_style())
         
+        plot_pose_live.plot_world_landmarks(ax, results_pose.pose_world_landmarks)
 
         # Draw the hand annotations on the image.
         image.flags.writeable = True
