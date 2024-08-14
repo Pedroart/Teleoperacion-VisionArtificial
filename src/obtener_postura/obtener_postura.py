@@ -14,19 +14,23 @@ class imagen_postura:
         self.mp_drawing = mp.solutions.drawing_utils
         self.mp_drawing_styles = mp.solutions.drawing_styles
         self.mp_pose = mp.solutions.pose
-        self.mp_hands = mp.solutions.hands
 
         # For webcam input:
         self.pose =  self.mp_pose.Pose(
             model_complexity=1,
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5)
-
-        self.hands = self.mp_hands.Hands(
-            model_complexity=0,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5)
-
+        
+        self.LANDMARK_GROUPS = [
+            [8, 6, 5, 4, 0, 1, 2, 3, 7],   # eyes
+            [10, 9],                       # mouth
+            [11, 13, 15, 17, 19, 15, 21],  # left arm
+            [11, 23, 25, 27, 29, 31, 27],  # left body side
+            [12, 14, 16, 18, 20, 16, 22],  # right arm
+            [12, 24, 26, 28, 30, 32, 28],  # right body side
+            [11, 12],                      # shoulder
+            [23, 24],                      # waist
+        ]
 
 def talker():
     cap = cv2.VideoCapture('/home/art/dev_ws/src/Teleoperacion-VisionArtificial/src/obtener_postura/test.mp4') 
@@ -48,9 +52,8 @@ def talker():
         results_pose = img_postura.pose.process(image)
 
         fin = time.time()
-        rospy.loginfo(fin-inicio)
-
-        pub.publish(fin-inicio)
+        #rospy.loginfo(fin-inicio)
+        pub.publish(str(fin-inicio))
         rate.sleep()
     cap.release()
 
