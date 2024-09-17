@@ -4,6 +4,7 @@ from ttkbootstrap.constants import *
 from ttkbootstrap.dialogs import Messagebox
 
 import threading
+import queue
 import cv2
 from PIL import Image, ImageTk
 import numpy as np
@@ -11,6 +12,20 @@ import time
 
 from postura import *
 from _camara import *
+
+size = (64*9, 48*9)
+
+
+
+def medir_tiempo(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()  # Tiempo de inicio
+        result = func(*args, **kwargs)  # Ejecuta la función original
+        end = time.time()  # Tiempo de fin
+        print(f"Tiempo de ejecución de {func.__name__}: {end - start:.6f} segundos")
+        return result  # Retorna el resultado de la función original
+    return wrapper
+
 
 class App(ttk.Window):
     def __init__(self):
@@ -29,13 +44,19 @@ class App(ttk.Window):
         self.notebook.pack(fill='both', expand=True)
         # Crear los frames para cada pestaña
         self.create_tabs()
-        
+        self.pestana = 'Main'
+        self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_change)
+
+        self.running = True
+        self.video_buffer = queue.Queue(maxsize=5)
+
         self.camara = camara()
         
+        self.evento_captura_imagen()
         '''
         # Inicializar captura de cámara
         self.cap = cv2.VideoCapture(0)
-        self.running = True
+        
 
         # Crear un buffer para almacenar el último frame
         self.frame_buffer = None
@@ -46,6 +67,11 @@ class App(ttk.Window):
         # Iniciar el procesamiento en segundo plano
         self.start_background_processing()
         '''
+
+    def on_tab_change(self, event):
+        # Obtener el índice de la pestaña activa
+        tab_id = self.notebook.index(self.notebook.select())
+        self.pestana = self.notebook.tab(tab_id, "text")
 
     def create_buttonbar(self):
         _func = lambda: Messagebox.ok(message='Adding new backup')
@@ -103,7 +129,7 @@ class App(ttk.Window):
         self.notebook.add(self.controlador_frame, text='Controlador')
         '''
 
-
+    
 
     def camara_estructura(self):
         # Configuracion de las columans
@@ -115,7 +141,7 @@ class App(ttk.Window):
         self.camara_view.grid(row=0, column=0, padx=10, pady=10,sticky='ns')
         
         ## Imagen del recuadro
-        black_image = Image.new('RGB', (64*9, 48*9), color='black')
+        black_image = Image.new('RGB', size , color='black')
         self.black_image_tk= ImageTk.PhotoImage(image=black_image)
         
         self.image_camara = tk.Label(self.camara_view, image=self.black_image_tk)
@@ -148,18 +174,35 @@ class App(ttk.Window):
         self.camara.set_camara(int(selected_value))
         print(self.camara.captura())
 
-
+    
     def actualizar_imagen_camara(self,imagen):
-        imagen_formato = Image.fromarray(imagen)
-        self.image_camara = tk.Label(self.camara_view, image=imagen_formato)
+        imagen_formato = ImageTk.PhotoImage(Image.fromarray(imagen))
+        self.image_camara.imgtk = imagen_formato
+        self.image_camara.configure(image=imagen_formato)
 
     def actualizar_imagen_postura(self,imagen):
-        imagen_formato = Image.fromarray(imagen)
+        imagen_formato = ImageTk.PhotoImage(Image.fromarray(imagen))
         self.image_postura = tk.Label(self.camara_view, image=imagen_formato)
 
+    
+    def evento_captura_imagen(self):
+        self.camara.captura()
+        if self.camara.activo:
+            try:
+                self.video_buffer.put_nowait(self.camara.imagen)
+                None
+            except:
+                None
 
+            if (self.pestana == 'Camara'):
+                self.camara.set_redimencionar(size) #<-verificar en que lugar colocarlo
+                self.actualizar_imagen_camara(self.camara.imagen)
 
+        if self.running:
+            # Tiempo de espera de cada ejecucion de 10ms
+            self.after(20, self.evento_captura_imagen)
 
+    
 
     def create_main_content(self):
         """Configurar el contenido del frame principal."""
@@ -169,7 +212,7 @@ class App(ttk.Window):
 
         self.camera_label.grid(row=0, column=0, padx=10, pady=10)
         self.esqueleto_label.grid(row=0, column=1, padx=10, pady=10)
-
+    '''
     def create_postura_content(self):
         label = ttk.Label(self.postura_frame, text="Contenido de la pestaña Postura", bootstyle=SUCCESS)
         label.pack(pady=20)
@@ -183,7 +226,7 @@ class App(ttk.Window):
         ret, frame = self.cap.read()
         if ret:
             # Guardar el frame en el buffer
-            self.frame_buffer = frame
+            self.video_buffer = frame
 
             # Convertir el frame a formato RGB y mostrarlo en la interfaz
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -224,12 +267,13 @@ class App(ttk.Window):
         gray = self.postura.set_postura(gray)
         # Aquí se podrían agregar más operaciones de procesamiento usando GPU
         return gray
-
+    '''
     def on_closing(self):
         """Limpieza al cerrar la aplicación."""
         self.running = False
         #self.cap.release()
         self.destroy()
+    
 
 # Crear y ejecutar la aplicación
 if __name__ == "__main__":

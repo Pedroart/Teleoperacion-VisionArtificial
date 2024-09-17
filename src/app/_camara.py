@@ -7,12 +7,15 @@ class camara:
         self.activo = False
         self.imagen = None
 
+        self.cap = cv2.VideoCapture(0)
         self.set_camara(self.devN)
         
 
     def set_camara(self,devN):
+        if self.cap.isOpened():
+            self.cap.release()
         self.devN = devN
-        self.cap = cv2.VideoCapture(self.devN)
+        self.cap = cv2.VideoCapture(devN)
         self.activo = True
         return True
 
@@ -22,8 +25,10 @@ class camara:
             if not success:
                 self.activo = False
                 return False
-            self.imagen = image
+            self.imagen = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             return True
+        
+        self.activo = False
         return False
     
     def set_redimencionar(self,size):
@@ -35,5 +40,6 @@ class camara:
         INTER_LANCZOS4 resize: Time Taken: 0:00:00.021042
         INTER_AREA resize:     Time Taken: 0:00:00.065569
         '''
-        return cv2.resize(self.imagen, size, interpolation=cv2.INTER_NEAREST)
+        self.imagen = cv2.resize(self.imagen, size, interpolation=cv2.INTER_AREA)
+        return True
         
