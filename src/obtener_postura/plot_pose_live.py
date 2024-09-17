@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+# Codigo extraido de https://github.com/stebusse/mediapipe-plot-pose-live
 
 # connections for the MediaPipe topology
 LANDMARK_GROUPS = [

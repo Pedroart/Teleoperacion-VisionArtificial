@@ -1,0 +1,4 @@
+rosrun Teleoperacion-VisionArtificial src/obtener_postura/obtener_postura.py
+rosrun Teleoperacion-VisionArtificial src/join.py
+roslaunch Teleoperacion-VisionArtificial display_sawyer_sliders.launch
+
