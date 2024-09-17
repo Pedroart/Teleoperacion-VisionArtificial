@@ -96,12 +96,12 @@ class App(ttk.Window):
         )
         btn.pack(side=LEFT, ipadx=5, ipady=5, padx=0, pady=1)
 
-        btn = ttk.Button(
+        self.indicador_estado_camara = ttk.Button(
             master= self.buttonbar, text='(C)',
             compound=LEFT,
             bootstyle=PRIMARY
         )
-        btn.pack(side=RIGHT, ipadx=5, ipady=5, padx=0, pady=1)
+        self.indicador_estado_camara.pack(side=RIGHT, ipadx=5, ipady=5, padx=0, pady=1)
 
         btn = ttk.Button(
             master= self.buttonbar, text='(P)',
@@ -188,15 +188,18 @@ class App(ttk.Window):
     def evento_captura_imagen(self):
         self.camara.captura()
         if self.camara.activo:
+            self.indicador_estado_camara.configure(bootstyle=SUCCESS)
             try:
                 self.video_buffer.put_nowait(self.camara.imagen)
                 None
             except:
-                None
+                self.indicador_estado_camara.configure(bootstyle=WARNING)
 
-            if (self.pestana == 'Camara'):
+            if (self.pestana == 'Camara'): # verificamos que la pestaña este activa para ahorra recursos
                 self.camara.set_redimencionar(size) #<-verificar en que lugar colocarlo
                 self.actualizar_imagen_camara(self.camara.imagen)
+        else:
+            self.indicador_estado_camara.configure(bootstyle=DANGER)
 
         if self.running:
             # Tiempo de espera de cada ejecucion de 10ms
