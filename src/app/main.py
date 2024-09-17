@@ -1,6 +1,8 @@
 import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
+from ttkbootstrap.dialogs import Messagebox
+
 import threading
 import cv2
 from PIL import Image, ImageTk
@@ -8,20 +10,29 @@ import numpy as np
 import time
 
 from postura import *
+from _camara import *
 
 class App(ttk.Window):
     def __init__(self):
         super().__init__(themename="flatly")
         self.title("Luzia")
-        self.geometry("800x600")
+        
+        self.geometry("1280x720")
+
+        # Crear Barra de Control
+        self.buttonbar = ttk.Frame(self, style=PRIMARY)
+        self.buttonbar.pack(fill=X, pady=1, side=TOP)
+        self.create_buttonbar()
 
         # Crear el notebook (conjunto de pestañas)
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill='both', expand=True)
-
         # Crear los frames para cada pestaña
         self.create_tabs()
-
+        
+        self.camara = camara()
+        
+        '''
         # Inicializar captura de cámara
         self.cap = cv2.VideoCapture(0)
         self.running = True
@@ -34,19 +45,121 @@ class App(ttk.Window):
         
         # Iniciar el procesamiento en segundo plano
         self.start_background_processing()
+        '''
+
+    def create_buttonbar(self):
+        _func = lambda: Messagebox.ok(message='Adding new backup')
+        btn = ttk.Button(
+            master= self.buttonbar, text='\u25B6 Iniciar',
+            compound=LEFT, 
+            command=_func
+        )
+        btn.pack(side=LEFT, ipadx=5, ipady=5, padx=0, pady=1)
+        _func = None
+        btn = ttk.Button(
+            master= self.buttonbar, text='\u21BB Reiniciar',
+            compound=LEFT, 
+            command=_func
+        )
+        btn.pack(side=LEFT, ipadx=5, ipady=5, padx=0, pady=1)
+        _func = None
+        btn = ttk.Button(
+            master= self.buttonbar, text='\u2716 Detener',
+            compound=LEFT, 
+            command=_func
+        )
+        btn.pack(side=LEFT, ipadx=5, ipady=5, padx=0, pady=1)
+
+        btn = ttk.Button(
+            master= self.buttonbar, text='(C)',
+            compound=LEFT,
+            bootstyle=PRIMARY
+        )
+        btn.pack(side=RIGHT, ipadx=5, ipady=5, padx=0, pady=1)
+
+        btn = ttk.Button(
+            master= self.buttonbar, text='(P)',
+            compound=LEFT, 
+        )
+        btn.pack(side=RIGHT, ipadx=5, ipady=5, padx=0, pady=1)
+        
 
     def create_tabs(self):
-        self.main_frame = ttk.Frame(self.notebook, bootstyle=PRIMARY)
+        self.main_frame = ttk.Frame(self.notebook, bootstyle=None)
         self.create_main_content()
         self.notebook.add(self.main_frame, text='Main')
 
-        self.postura_frame = ttk.Frame(self.notebook, bootstyle=SUCCESS)
+        self.camara_frame = ttk.Frame(self.notebook, bootstyle=None)
+        self.camara_estructura()
+        self.notebook.add(self.camara_frame, text='Camara')
+
+        '''
+        self.postura_frame = ttk.Frame(self.notebook, bootstyle=None)
         self.create_postura_content()
         self.notebook.add(self.postura_frame, text='Postura')
 
-        self.controlador_frame = ttk.Frame(self.notebook, bootstyle=INFO)
+        self.controlador_frame = ttk.Frame(self.notebook, bootstyle=None)
         self.create_controlador_content()
         self.notebook.add(self.controlador_frame, text='Controlador')
+        '''
+
+
+
+    def camara_estructura(self):
+        # Configuracion de las columans
+        self.camara_frame.grid_columnconfigure(0, weight=1)
+        self.camara_frame.grid_columnconfigure(1, weight=1)
+
+        # Columna de Vista de camaras
+        self.camara_view = ttk.Labelframe(self.camara_frame,text='Vista de Camara', padding=10)
+        self.camara_view.grid(row=0, column=0, padx=10, pady=10,sticky='ns')
+        
+        ## Imagen del recuadro
+        black_image = Image.new('RGB', (64*9, 48*9), color='black')
+        self.black_image_tk= ImageTk.PhotoImage(image=black_image)
+        
+        self.image_camara = tk.Label(self.camara_view, image=self.black_image_tk)
+        self.image_camara.grid(row=0, column=0, sticky='nsew')
+        
+        ## Selector de disposito
+        self.dispositivo_numero = ttk.Combobox(
+            master=self.camara_view,
+            values=[str(i) for i in range(11)],
+            bootstyle="light",
+            state='readonly'
+        )
+        
+
+        # Columna de Vista de Mediapipe
+        self.dispositivo_numero.grid(row=1, column=0, padx=10, pady=10, sticky='nsew')
+        self.dispositivo_numero.set(0)
+
+        self.dispositivo_numero.bind('<<ComboboxSelected>>', self.cambio_numero_camara)
+
+        self.postura_view = ttk.Labelframe(self.camara_frame,text='Postura', padding=10)
+        self.postura_view.grid(row=0, column=1, padx=10, pady=10,sticky='ns')
+        
+        self.imagen_postura = tk.Label(self.postura_view, image=self.black_image_tk)
+        self.imagen_postura.grid(row=0, column=0, sticky='nsew')
+    
+    def cambio_numero_camara(self,event):
+        self.camara.activo = False
+        selected_value = self.dispositivo_numero.get()
+        self.camara.set_camara(int(selected_value))
+        print(self.camara.captura())
+
+
+    def actualizar_imagen_camara(self,imagen):
+        imagen_formato = Image.fromarray(imagen)
+        self.image_camara = tk.Label(self.camara_view, image=imagen_formato)
+
+    def actualizar_imagen_postura(self,imagen):
+        imagen_formato = Image.fromarray(imagen)
+        self.image_postura = tk.Label(self.camara_view, image=imagen_formato)
+
+
+
+
 
     def create_main_content(self):
         """Configurar el contenido del frame principal."""
@@ -115,7 +228,7 @@ class App(ttk.Window):
     def on_closing(self):
         """Limpieza al cerrar la aplicación."""
         self.running = False
-        self.cap.release()
+        #self.cap.release()
         self.destroy()
 
 # Crear y ejecutar la aplicación

@@ -23,7 +23,8 @@ class camara:
                 self.activo = False
                 return False
             self.imagen = image
-        return True
+            return True
+        return False
     
     def set_redimencionar(self,size):
         #INTER_NEAREST
