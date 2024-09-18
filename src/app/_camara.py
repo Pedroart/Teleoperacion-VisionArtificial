@@ -1,7 +1,8 @@
 import cv2
 
 class camara:
-
+    ancho = 0
+    alto = 0
     def __init__(self,devN = 0) -> None:
         self.devN = devN
         self.activo = False
@@ -17,6 +18,11 @@ class camara:
         self.devN = devN
         self.cap = cv2.VideoCapture(devN)
         self.activo = True
+        if self.cap.isOpened():
+            self.ancho = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            self.alto = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        else:
+            self.activo = False
         return True
 
     def captura(self):

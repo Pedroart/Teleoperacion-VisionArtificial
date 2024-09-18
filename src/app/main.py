@@ -53,6 +53,7 @@ class App(ttk.Window):
 
         self.running = True
         self.video_buffer = queue.Queue(maxsize=5)
+        self.image_pose_buffer = queue.Queue(maxsize=5)
 
         self.camara = camara()
         self.pose = pose()
@@ -91,23 +92,26 @@ class App(ttk.Window):
                 # Consume una imagen del buffer y la procesa
                 imagen = self.video_buffer.get()
                 imagen = redimensionar_imagen_porcentaje(imagen,self.optimizar)
-                alto, ancho = imagen.shape[:2]
-                # Crear una imagen negra con las mismas dimensiones
-                imagen_negra = np.zeros((alto, ancho, 3), dtype=np.uint8)
 
                 if(self.pose.set_pose(imagen)):
-                    self.indicador_estado_postura.configure(bootstyle=SUCCESS)
-                    self.actualizar_imagen_postura(self.pose.get_draw_pose(imagen_negra))
+                    #self.indicador_estado_postura.configure(bootstyle=SUCCESS)
+                    try:
+                        self.image_pose_buffer.put_nowait(
+                            self.pose.get_draw_pose(self.imagen_negra)
+                            )
+                    except:
+                        pass
+                    
                     fin = time.time()
                     self.indicador_estado_postura.configure(text=str( 1//(fin-inicio) ))
                 else:
                     self.indicador_estado_postura.configure(text="(P)")
-                    self.indicador_estado_postura.configure(bootstyle=DANGER)
+                    #self.indicador_estado_postura.configure(bootstyle=DANGER)
                 
             else:
                 pass
                 #self.indicador_estado_postura.configure(bootstyle=WARNING)
-            
+    
 
     def create_buttonbar(self):
         _func = lambda: Messagebox.ok(message='Adding new backup')
@@ -220,12 +224,21 @@ class App(ttk.Window):
         
     def cambio_optimizacion(self,event):
         self.optimizar = int(self.optimizacion.get())
-        
+        self.imagen_negra = np.zeros(
+            (
+                self.camara.alto*self.optimizar//100, 
+                self.camara.ancho*self.optimizar//100,
+                3
+            ),
+            dtype=np.uint8
+            )
+
     def cambio_numero_camara(self,event):
         self.camara.activo = False
         selected_value = self.dispositivo_numero.get()
         self.camara.set_camara(int(selected_value))
-        print(self.camara.captura())
+        self.imagen_negra = np.zeros((self.camara.alto, self.camara.ancho, 3), dtype=np.uint8)
+        #print(self.camara.captura())
 
     
     def actualizar_imagen_camara(self,imagen):
@@ -238,7 +251,14 @@ class App(ttk.Window):
         self.imagen_postura.imgtk = imagen_formato
         self.imagen_postura.configure(image=imagen_formato)
 
-    
+    def evento_imagen_postura(self):
+        if (self.pestana == 'Camara') and self.camara.activo and (not self.image_pose_buffer.empty()):
+            imagen = self.image_pose_buffer.get()
+            self.actualizar_imagen_postura(imagen)
+        if self.running:
+            # Tiempo de espera de cada ejecucion de 10ms
+            self.after(10, self.evento_captura_imagen)
+
     def evento_captura_imagen(self):
         self.camara.captura()
         if self.camara.activo:
