@@ -28,9 +28,9 @@ def medir_tiempo(func):
 
 
 class App(ttk.Window):
-    optimizar = 90
+    optimizar = 50
     running = False
-
+    imagen_negra = np.zeros((size[1], size[0], 3), dtype=np.uint8)
     def __init__(self):
         #Variables del sistema 
 
@@ -95,20 +95,20 @@ class App(ttk.Window):
                 imagen = redimensionar_imagen_porcentaje(imagen,self.optimizar)
 
                 if(self.pose.set_pose(imagen)):
-                    #self.indicador_estado_postura.configure(bootstyle=SUCCESS)
-                    try:
-                        self.imagen_negra = np.zeros((self.camara.alto*self.optimizar//100, self.camara.ancho*self.optimizar//100,3),dtype=np.uint8)
-                        self.image_pose_buffer.put_nowait(
-                            self.pose.get_draw_pose(self.imagen_negra)
-                            )
-                    except:
-                        pass
+                    self.imagen_negra = np.zeros((self.camara.alto*self.optimizar//100, self.camara.ancho*self.optimizar//100,3),dtype=np.uint8)
                     
+                    if(self.pose.son_puntos_visibles()):
+                        self.pose.normalizacion()
+                        self.pose.get_angulos()
+                        self.indicador_estado_postura.configure(bootstyle=SUCCESS)
+                    else:
+                        self.indicador_estado_postura.configure(bootstyle=WARNING)
+
                     fin = time.time()
                     self.indicador_estado_postura.configure(text=str( 1//(fin-inicio) ))
                 else:
                     self.indicador_estado_postura.configure(text="(P)")
-                    #self.indicador_estado_postura.configure(bootstyle=DANGER)
+                    self.indicador_estado_postura.configure(bootstyle=DANGER)
                 
             else:
                 pass
@@ -248,10 +248,8 @@ class App(ttk.Window):
     def evento_imagen_postura(self):
         if (self.pestana == 'Camara') and (self.camara.activo): # verificamos que la pestaña este activa para ahorra recursos
             self.actualizar_imagen_camara(self.camara.imagen)
-            if not self.image_pose_buffer.empty():
-                imagen = self.image_pose_buffer.get()
-                self.actualizar_imagen_postura(imagen)
-        
+            self.actualizar_imagen_postura(self.pose.get_draw_pose(self.imagen_negra))
+    
         if self.running:
             # Tiempo de espera de cada ejecucion de 10ms
             self.after(200, self.evento_imagen_postura)

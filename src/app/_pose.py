@@ -18,12 +18,14 @@ class pose:
     
     '''
 
+    estado = False
+
     def __init__(self) -> None:
 
         self.mp_drawing = mp.solutions.drawing_utils
         self.mp_drawing_styles = mp.solutions.drawing_styles
         self.mp_pose = mp.solutions.pose
-
+    
         # For webcam input:
         self.pose =  self.mp_pose.Pose(
             model_complexity=1,
@@ -51,17 +53,35 @@ class pose:
             return True
         return False
 
+    def son_puntos_visibles(self, umbral_visibilidad=0.5):
+        # Indices de los puntos del brazo izquierdo
+        puntos_brazo_izquierdo = [11, 13, 15, 17, 19, 21]
+
+        # Verificar si pose_landmarks está disponible
+        if self.results_pose is None or self.results_pose.pose_landmarks is None:
+            self.estado = False
+            return False
+
+        # Verificar la visibilidad de los puntos
+        for idx in puntos_brazo_izquierdo:
+            if self.results_pose.pose_landmarks.landmark[idx].visibility < umbral_visibilidad:
+                self.estado = False
+                return False
+            
+        self.estado = True
+        return True
+
     def get_draw_pose(self,imagen):
         if self.results_pose.pose_landmarks is not None:
-            
             self.mp_drawing.draw_landmarks(
                 imagen,
                 self.results_pose.pose_landmarks,
                 self.mp_pose.POSE_CONNECTIONS,
                 )
-            return  imagen
+        '''
         else:
             print('landmark no se observan')
+        '''
         return imagen
     
     def normalizacion(self):
