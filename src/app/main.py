@@ -113,6 +113,7 @@ class App(ttk.Window):
                         self.pose.get_angulos()
                         self.indicador_estado_postura.configure(bootstyle=SUCCESS)
                         self.pose.plot_world_landmarks(self.ax_3d)
+                        self.canvas_3d.draw()
                     else:
                         self.indicador_estado_postura.configure(bootstyle=WARNING)
 
