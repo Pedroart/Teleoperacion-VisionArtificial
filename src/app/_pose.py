@@ -142,7 +142,7 @@ class pose:
         cos_q3 = np.clip(cos_q3, -1, 1)
         q3 = np.arccos(cos_q3)
         '''
-        return np.array([q1,q2,q3,q4,0,0,0])*180/3.14
+        return np.array([q1,q2,q3,q4,0,0,0])
         #print(q1*180/3.14,q2*180/3.14,q4*180/3.14,q3*180/3.14)
         
         

@@ -10,6 +10,10 @@ from PIL import Image, ImageTk
 import numpy as np
 import time
 
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+
 from _pose import *
 from _camara import *
 
@@ -38,6 +42,10 @@ class App(ttk.Window):
         self.title("Luzia")
         self.geometry("1280x720")
 
+        # Crear la figura de Matplotlib para el gráfico 3D
+        self.fig_3d = plt.figure(figsize=(5, 4))
+        self.ax_3d = self.fig_3d.add_subplot(111, projection='3d')
+
         # Crear Barra de Control
         self.buttonbar = ttk.Frame(self, style=PRIMARY)
         self.buttonbar.pack(fill=X, pady=1, side=TOP)
@@ -55,6 +63,8 @@ class App(ttk.Window):
         self.video_buffer = queue.Queue(maxsize=5)
         self.image_pose_buffer = queue.Queue(maxsize=5)
 
+        
+
         self.camara = camara()
         self.pose = pose()
         
@@ -64,6 +74,7 @@ class App(ttk.Window):
 
         self.evento_captura_imagen()
         self.evento_imagen_postura()
+
         '''
         # Inicializar captura de cámara
         self.cap = cv2.VideoCapture(0)
@@ -101,6 +112,7 @@ class App(ttk.Window):
                         self.pose.normalizacion()
                         self.pose.get_angulos()
                         self.indicador_estado_postura.configure(bootstyle=SUCCESS)
+                        self.pose.plot_world_landmarks(self.ax_3d)
                     else:
                         self.indicador_estado_postura.configure(bootstyle=WARNING)
 
@@ -275,13 +287,20 @@ class App(ttk.Window):
     
 
     def create_main_content(self):
-        """Configurar el contenido del frame principal."""
-        self.camera_label = ttk.Label(self.main_frame)
-        self.esqueleto_label = ttk.Label(self.main_frame)
+        self.main_frame.grid_columnconfigure(0, weight=1)
+        self.main_frame.grid_columnconfigure(1, weight=1)
+
+        self.postura_view = ttk.Labelframe(self.main_frame,text='Postura', padding=10)
+        self.postura_view.grid(row=0, column=0, padx=10, pady=10,sticky='ns')
+
+        # Agregar la figura de Matplotlib al Tkinter Canvas para 3D
+        self.canvas_3d = FigureCanvasTkAgg(self.fig_3d, self.postura_view)
+        self.canvas_3d.get_tk_widget().grid(row=0, column=0, padx=10, pady=10,sticky='ns')
+
+        self.angulos_view = ttk.Labelframe(self.main_frame,text='Angulos', padding=10)
+        self.angulos_view.grid(row=0, column=1, padx=10, pady=10,sticky='ns')
         
 
-        self.camera_label.grid(row=0, column=0, padx=10, pady=10)
-        self.esqueleto_label.grid(row=0, column=1, padx=10, pady=10)
     '''
     def create_postura_content(self):
         label = ttk.Label(self.postura_frame, text="Contenido de la pestaña Postura", bootstyle=SUCCESS)
@@ -341,6 +360,8 @@ class App(ttk.Window):
     def on_closing(self):
         """Limpieza al cerrar la aplicación."""
         self.running = False
+        self.canvas_3d.get_tk_widget().destroy()
+        plt.close(self.fig_3d)
         #self.cap.release()
         self.destroy()
     
