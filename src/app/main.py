@@ -63,6 +63,7 @@ class App(ttk.Window):
         self.hilo_demonio.start()
 
         self.evento_captura_imagen()
+        self.evento_imagen_postura()
         '''
         # Inicializar captura de cámara
         self.cap = cv2.VideoCapture(0)
@@ -96,6 +97,7 @@ class App(ttk.Window):
                 if(self.pose.set_pose(imagen)):
                     #self.indicador_estado_postura.configure(bootstyle=SUCCESS)
                     try:
+                        self.imagen_negra = np.zeros((self.camara.alto*self.optimizar//100, self.camara.ancho*self.optimizar//100,3),dtype=np.uint8)
                         self.image_pose_buffer.put_nowait(
                             self.pose.get_draw_pose(self.imagen_negra)
                             )
@@ -224,14 +226,6 @@ class App(ttk.Window):
         
     def cambio_optimizacion(self,event):
         self.optimizar = int(self.optimizacion.get())
-        self.imagen_negra = np.zeros(
-            (
-                self.camara.alto*self.optimizar//100, 
-                self.camara.ancho*self.optimizar//100,
-                3
-            ),
-            dtype=np.uint8
-            )
 
     def cambio_numero_camara(self,event):
         self.camara.activo = False
@@ -252,12 +246,17 @@ class App(ttk.Window):
         self.imagen_postura.configure(image=imagen_formato)
 
     def evento_imagen_postura(self):
-        if (self.pestana == 'Camara') and self.camara.activo and (not self.image_pose_buffer.empty()):
-            imagen = self.image_pose_buffer.get()
-            self.actualizar_imagen_postura(imagen)
+        if (self.pestana == 'Camara') and (self.camara.activo): # verificamos que la pestaña este activa para ahorra recursos
+            self.camara.set_redimencionar(size) #<-verificar en que lugar colocarlo
+            self.actualizar_imagen_camara(self.camara.imagen)
+
+            if not self.image_pose_buffer.empty():
+                imagen = self.image_pose_buffer.get()
+                self.actualizar_imagen_postura(imagen)
+        
         if self.running:
             # Tiempo de espera de cada ejecucion de 10ms
-            self.after(10, self.evento_captura_imagen)
+            self.after(200, self.evento_imagen_postura)
 
     def evento_captura_imagen(self):
         self.camara.captura()
@@ -268,10 +267,6 @@ class App(ttk.Window):
                 None
             except:
                 self.indicador_estado_camara.configure(bootstyle=WARNING)
-
-            if (self.pestana == 'Camara'): # verificamos que la pestaña este activa para ahorra recursos
-                self.camara.set_redimencionar(size) #<-verificar en que lugar colocarlo
-                self.actualizar_imagen_camara(self.camara.imagen)
         else:
             self.indicador_estado_camara.configure(bootstyle=DANGER)
 

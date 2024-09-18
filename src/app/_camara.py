@@ -21,6 +21,7 @@ class camara:
         if self.cap.isOpened():
             self.ancho = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             self.alto = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            print(self.ancho,self.alto)
         else:
             self.activo = False
         return True
