@@ -10,7 +10,7 @@ from PIL import Image, ImageTk
 import numpy as np
 import time
 
-from postura import *
+from _pose import *
 from _camara import *
 
 size = (64*9, 48*9)
@@ -28,10 +28,14 @@ def medir_tiempo(func):
 
 
 class App(ttk.Window):
+    optimizar = 90
+    running = False
+
     def __init__(self):
+        #Variables del sistema 
+
         super().__init__(themename="flatly")
         self.title("Luzia")
-        
         self.geometry("1280x720")
 
         # Crear Barra de Control
@@ -51,7 +55,12 @@ class App(ttk.Window):
         self.video_buffer = queue.Queue(maxsize=5)
 
         self.camara = camara()
+        self.pose = pose()
         
+        
+        self.hilo_demonio = threading.Thread(target=self.procesar_video_buffer, daemon=True)
+        self.hilo_demonio.start()
+
         self.evento_captura_imagen()
         '''
         # Inicializar captura de cámara
@@ -72,6 +81,33 @@ class App(ttk.Window):
         # Obtener el índice de la pestaña activa
         tab_id = self.notebook.index(self.notebook.select())
         self.pestana = self.notebook.tab(tab_id, "text")
+
+    
+    def procesar_video_buffer(self):
+        # Este método se ejecutará en un hilo demonio
+        while self.running:
+            if not self.video_buffer.empty():
+                inicio = time.time()
+                # Consume una imagen del buffer y la procesa
+                imagen = self.video_buffer.get()
+                imagen = redimensionar_imagen_porcentaje(imagen,self.optimizar)
+                alto, ancho = imagen.shape[:2]
+                # Crear una imagen negra con las mismas dimensiones
+                imagen_negra = np.zeros((alto, ancho, 3), dtype=np.uint8)
+
+                if(self.pose.set_pose(imagen)):
+                    self.indicador_estado_postura.configure(bootstyle=SUCCESS)
+                    self.actualizar_imagen_postura(self.pose.get_draw_pose(imagen_negra))
+                    fin = time.time()
+                    self.indicador_estado_postura.configure(text=str( 1//(fin-inicio) ))
+                else:
+                    self.indicador_estado_postura.configure(text="(P)")
+                    self.indicador_estado_postura.configure(bootstyle=DANGER)
+                
+            else:
+                pass
+                #self.indicador_estado_postura.configure(bootstyle=WARNING)
+            
 
     def create_buttonbar(self):
         _func = lambda: Messagebox.ok(message='Adding new backup')
@@ -103,11 +139,11 @@ class App(ttk.Window):
         )
         self.indicador_estado_camara.pack(side=RIGHT, ipadx=5, ipady=5, padx=0, pady=1)
 
-        btn = ttk.Button(
+        self.indicador_estado_postura = ttk.Button(
             master= self.buttonbar, text='(P)',
             compound=LEFT, 
         )
-        btn.pack(side=RIGHT, ipadx=5, ipady=5, padx=0, pady=1)
+        self.indicador_estado_postura.pack(side=RIGHT, ipadx=5, ipady=5, padx=0, pady=1)
         
 
     def create_tabs(self):
@@ -167,7 +203,24 @@ class App(ttk.Window):
         
         self.imagen_postura = tk.Label(self.postura_view, image=self.black_image_tk)
         self.imagen_postura.grid(row=0, column=0, sticky='nsew')
-    
+
+        ## Selector de disposito
+        self.optimizacion = ttk.Combobox(
+            master=self.postura_view,
+            values=[str(i) for i in range(50,100,10)],
+            bootstyle="light",
+            state='readonly'
+        )
+        
+
+        # Columna de Vista de Mediapipe
+        self.optimizacion.grid(row=1, column=0, padx=10, pady=10, sticky='nsew')
+        self.optimizacion.set(self.optimizar)
+        self.optimizacion.bind('<<ComboboxSelected>>', self.cambio_optimizacion)
+        
+    def cambio_optimizacion(self,event):
+        self.optimizar = int(self.optimizacion.get())
+        
     def cambio_numero_camara(self,event):
         self.camara.activo = False
         selected_value = self.dispositivo_numero.get()
@@ -182,7 +235,8 @@ class App(ttk.Window):
 
     def actualizar_imagen_postura(self,imagen):
         imagen_formato = ImageTk.PhotoImage(Image.fromarray(imagen))
-        self.image_postura = tk.Label(self.camara_view, image=imagen_formato)
+        self.imagen_postura.imgtk = imagen_formato
+        self.imagen_postura.configure(image=imagen_formato)
 
     
     def evento_captura_imagen(self):
@@ -203,7 +257,7 @@ class App(ttk.Window):
 
         if self.running:
             # Tiempo de espera de cada ejecucion de 10ms
-            self.after(20, self.evento_captura_imagen)
+            self.after(33, self.evento_captura_imagen)
 
     
 
