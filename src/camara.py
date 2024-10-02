@@ -16,7 +16,7 @@ class camara:
         self.activo = True
         return True
 
-    def captura(self):
+    def caputer(self):
         if self.cap.isOpened():
             success, image = self.cap.read()
             if not success:

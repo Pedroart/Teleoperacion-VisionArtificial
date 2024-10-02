@@ -2,7 +2,7 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-import fun_espaciales as fe
+import controller.fun_espaciales as fe
 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
@@ -28,7 +28,7 @@ class pose:
     
         # For webcam input:
         self.pose =  self.mp_pose.Pose(
-            model_complexity=1,
+            model_complexity=2,
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5)
         
@@ -113,10 +113,11 @@ class pose:
             self.rotar_hombro = fe.matriz_rotacion([hombro_izquierdo], [[1, 0, 0]])
 
     def get_angulos(self):
+        
         coords_rotadas = self.aplicar_normalizacion_(self.LANDMARK_GROUPS[0])
         coords_rotadas -= coords_rotadas[:,0][:, np.newaxis]
         codo = fe.unitario(coords_rotadas[:,1])
-        
+        print("code: ",coords_rotadas[:,1])
         q2 = -np.arcsin(codo[2])
         
         cos_q2 = np.cos(q2)
@@ -128,7 +129,7 @@ class pose:
         # Calculo de q3
         AC = coords_rotadas[:,0] - coords_rotadas[:,1]
         BC = coords_rotadas[:,2] - coords_rotadas[:,1]
-
+        #print(coords_rotadas[:,2])
         # Calculamos el ángulo entre los vectores AC y BC usando el producto punto
         cos_theta = np.dot(AC, BC) / (np.linalg.norm(AC) * np.linalg.norm(BC))
         q4 = np.arccos(cos_theta)-np.pi/2
