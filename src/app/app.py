@@ -23,6 +23,7 @@ class App(ttk.Window):
     from view.camara.video_evento import evento_captura_imagen
     from view.camara.video_evento import evento_imagen_postura
     from view.camara.postura_player import postura_player_init
+    from view.D3.D3_player import D3_init
 
     running = False
 
@@ -45,6 +46,7 @@ class App(ttk.Window):
         """Definiciones de Estructura"""
         self.barra_control_init()
         self.tabs_init()
+        self.D3_init()
 
         """Definicion de Vistas"""
         self.video_player_init()

@@ -22,7 +22,7 @@ def procesar_video_buffer(self):
 
                         self.indicador_estado_postura.configure(bootstyle=SUCCESS)
                         self.pose.plot_world_landmarks(self.ax_3d)
-                        #self.canvas_3d.draw()
+                        self.canvas_3d.draw()
                     else:
                         self.indicador_estado_postura.configure(bootstyle=WARNING)
 
