@@ -28,7 +28,7 @@ class pose:
     
         # For webcam input:
         self.pose =  self.mp_pose.Pose(
-            model_complexity=2,
+            model_complexity=1,
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5)
         
@@ -117,7 +117,7 @@ class pose:
         coords_rotadas = self.aplicar_normalizacion_(self.LANDMARK_GROUPS[0])
         coords_rotadas -= coords_rotadas[:,0][:, np.newaxis]
         codo = fe.unitario(coords_rotadas[:,1])
-        print("code: ",coords_rotadas[:,1])
+        #print("code: ",coords_rotadas[:,1])
         q2 = -np.arcsin(codo[2])
         
         cos_q2 = np.cos(q2)

@@ -30,12 +30,13 @@ class Tecla():
                  ord(self.key) - ord(otra_tecla.key) )
 
 class App(ttk.Window):
+    
     optimizar = 50
     running = False
     imagen_negra = np.zeros((size[1], size[0], 3), dtype=np.uint8)
     def __init__(self):
         #Variables del sistema 
-
+        self.size = (64*9, 48*9)
         super().__init__(themename="flatly")
         self.title("Luzia")
         self.geometry("1280x720")
@@ -126,7 +127,8 @@ class App(ttk.Window):
                     
                     if(self.pose.son_puntos_visibles()):
                         self.pose.normalizacion()
-                        self.pose.get_angulos()
+                        print("Angulos:",self.pose.get_angulos())
+
                         self.indicador_estado_postura.configure(bootstyle=SUCCESS)
                         self.pose.plot_world_landmarks(self.ax_3d)
                         self.canvas_3d.draw()
@@ -218,10 +220,11 @@ class App(ttk.Window):
         self.image_camara = tk.Label(self.camara_view, image=self.black_image_tk)
         self.image_camara.grid(row=0, column=0, sticky='nsew')
         
+        opciones_dispositivos = ['/home/art23/dev_ws/src/Teleoperacion-VisionArtificial/src/app/test.mp4'] + [str(i) for i in range(11)]
         ## Selector de disposito
         self.dispositivo_numero = ttk.Combobox(
             master=self.camara_view,
-            values=[str(i) for i in range(11)],
+            values=opciones_dispositivos,
             bootstyle="light",
             state='readonly'
         )
@@ -259,7 +262,11 @@ class App(ttk.Window):
     def cambio_numero_camara(self,event):
         self.camara.activo = False
         selected_value = self.dispositivo_numero.get()
-        self.camara.set_camara(int(selected_value))
+        
+        if(len(selected_value)<2):
+            self.camara.set_camara(int(selected_value))
+        else:
+            self.camara.set_camara(selected_value)
         self.imagen_negra = np.zeros((self.camara.alto, self.camara.ancho, 3), dtype=np.uint8)
         #print(self.camara.captura())
 
