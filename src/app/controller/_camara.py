@@ -13,6 +13,7 @@ class camara:
         
 
     def set_camara(self,devN):
+        self.activo = False
         if self.cap.isOpened():
             self.cap.release()
         self.devN = devN
@@ -49,7 +50,14 @@ class camara:
         '''
         self.imagen = cv2.resize(self.imagen, size, interpolation=cv2.INTER_AREA)
         return True
-    
+     
+    def destroy(self):
+        """
+        Libera los recursos utilizados por la cámara.
+        """
+        if self.cap.isOpened():
+            self.cap.release()  # Libera la captura de video
+
 def redimensionar_imagen_porcentaje(imagen, porcentaje):
     """
     Redimensiona la imagen en función de un porcentaje de su tamaño original.
@@ -72,3 +80,4 @@ def redimensionar_imagen_porcentaje(imagen, porcentaje):
 
 def set_redimencionar(imagen,size):
         return cv2.resize(imagen, size, interpolation=cv2.INTER_AREA)
+

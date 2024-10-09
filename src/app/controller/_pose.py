@@ -72,7 +72,7 @@ class pose:
         return True
 
     def get_draw_pose(self,imagen):
-        if self.results_pose.pose_landmarks is not None:
+        if self.results_pose is not None and self.results_pose.pose_landmarks is not None:
             self.mp_drawing.draw_landmarks(
                 imagen,
                 self.results_pose.pose_landmarks,
