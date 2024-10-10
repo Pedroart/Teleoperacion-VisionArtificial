@@ -21,7 +21,6 @@ def angle_callback(data):
     jvalues[2] = 3.14/2 - angulos[0]
     jvalues[3] = angulos[2]
     jvalues[4] = -3.14/2 + angulos[3]
-    jvalues[5]
 
     
 
