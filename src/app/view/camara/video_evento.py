@@ -4,6 +4,9 @@ from PIL import Image, ImageTk
 import numpy as np
 import time
 
+from std_msgs.msg import String
+from std_msgs.msg import Float64MultiArray
+
 def procesar_video_buffer(self):
         # Este método se ejecutará en un hilo demonio
         while self.running:
@@ -18,7 +21,14 @@ def procesar_video_buffer(self):
                     
                     if(self.pose.son_puntos_visibles()):
                         self.pose.normalizacion()
-                        print("Angulos:",self.pose.get_angulos())
+                        angulos = self.pose.get_angulos()
+                        print(angulos)
+                        msg = Float64MultiArray()
+            
+                        msg.data = angulos
+                        
+                        # Publica el mensaje
+                        self.pub.publish(msg)
 
                         self.indicador_estado_postura.configure(bootstyle=SUCCESS)
                         self.pose.plot_world_landmarks(self.ax_3d)

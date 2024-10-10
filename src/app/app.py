@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+import rospy
+from std_msgs.msg import String
+from std_msgs.msg import Float64MultiArray
+
 import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
@@ -42,6 +47,12 @@ class App(ttk.Window):
 
         self.video_buffer = queue.Queue(maxsize=5)
         self.image_pose_buffer = queue.Queue(maxsize=5)
+
+
+        rospy.init_node('angle_publisher', anonymous=True)
+        self.pub = rospy.Publisher('angle_topic', Float64MultiArray, queue_size=10)
+        
+        rate = rospy.Rate(20) # 20hz
 
         """Definiciones de Estructura"""
         self.barra_control_init()
