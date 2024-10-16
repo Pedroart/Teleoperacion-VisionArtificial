@@ -118,12 +118,10 @@ class pose:
         coords_rotadas -= coords_rotadas[:,0][:, np.newaxis]
         codo = fe.unitario(coords_rotadas[:,1])
         #print("code: ",coords_rotadas[:,1])
-        q2 = -np.arcsin(codo[2])
-        
-        cos_q2 = np.cos(q2)
+        q2 = np.arcsin(codo[2])
 
         # Ahora resolvemos q1
-        q1 = np.arctan2(codo[0] / cos_q2, codo[1] / cos_q2)
+        q1 = -np.arctan2(codo[0], codo[1])
         
         
         # Calculo de q3
