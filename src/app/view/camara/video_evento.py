@@ -22,7 +22,7 @@ def procesar_video_buffer(self):
                     if(self.pose.son_puntos_visibles()):
                         self.pose.normalizacion()
                         angulos = self.pose.get_angulos()
-                        print(angulos)
+                        #print(angulos)
                         msg = Float64MultiArray()
             
                         msg.data = angulos

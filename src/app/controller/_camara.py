@@ -34,6 +34,7 @@ class camara:
                 self.activo = False
                 return False
             self.imagen = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            
             return True
         
         self.activo = False

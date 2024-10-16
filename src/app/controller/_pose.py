@@ -28,7 +28,7 @@ class pose:
     
         # For webcam input:
         self.pose =  self.mp_pose.Pose(
-            model_complexity=1,
+            model_complexity=2,
             min_detection_confidence=0.7,
             min_tracking_confidence=0.7)
         
@@ -117,21 +117,25 @@ class pose:
         coords_rotadas = self.aplicar_normalizacion_(self.LANDMARK_GROUPS[0])
         coords_rotadas -= coords_rotadas[:,0][:, np.newaxis]
         codo = fe.unitario(coords_rotadas[:,1])
+        #print(codo)
         #print("code: ",coords_rotadas[:,1])
-        q2 = np.arcsin(codo[2])
+        q2 = -np.arccos(codo[1])
 
         # Ahora resolvemos q1
-        q1 = np.arctan2(-codo[0], codo[1])
+        q1 = np.arctan2(codo[0], -codo[2])
         
-        '''
+        
         # Calculo de q3
         AC = coords_rotadas[:,0] - coords_rotadas[:,1]
         BC = coords_rotadas[:,2] - coords_rotadas[:,1]
         #print(coords_rotadas[:,2])
         # Calculamos el ángulo entre los vectores AC y BC usando el producto punto
         cos_theta = np.dot(AC, BC) / (np.linalg.norm(AC) * np.linalg.norm(BC))
-        q4 = np.arccos(cos_theta)-np.pi/2
-        q3 = np.arccos(fe.unitario(np.cross(AC, BC))[2]/cos_q2) - np.pi/2
+        q4 = np.arccos(cos_theta)
+
+        q3 = np.arcsin(fe.unitario(np.cross(AC, BC))[1] / np.sin(q2) )
+        
+        '''
         
         
 
@@ -142,7 +146,7 @@ class pose:
         q3 = np.arccos(cos_q3)
         
         '''
-        return np.array([q1,q2,0,0,0,0,0])
+        return np.array([q1,q2,q3,q4,0,0,0])
         #print(q1*180/3.14,q2*180/3.14,q4*180/3.14,q3*180/3.14)
         
         
@@ -159,7 +163,8 @@ class pose:
         coords -= self.hombros_coords[:, np.newaxis]
 
         # Aplicar las dos matrices de rotación a todo el conjunto de coordenadas
-        return np.dot(self.rotar_hombro.T, np.dot(self.rot_columan.T, coords))
+        #return np.dot(self.rotar_hombro.T, np.dot(self.rot_columan.T, coords))
+        return coords
     
     def plot_world_landmarks(self, ax):
     # Verificar si no hay landmarks detectados

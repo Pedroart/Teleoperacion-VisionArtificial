@@ -20,6 +20,8 @@ def angle_callback(data):
     jvalues = [0,0,0,0,0,0,0,0]
     jvalues[1] = angulos[0]
     jvalues[2] = 1.57+angulos[1]
+    jvalues[3] = angulos[2]
+    jvalues[4] = 1.57*2+angulos[3]
     
 
     # Crear un mensaje JointState
