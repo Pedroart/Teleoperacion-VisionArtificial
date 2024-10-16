@@ -29,8 +29,8 @@ class pose:
         # For webcam input:
         self.pose =  self.mp_pose.Pose(
             model_complexity=1,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5)
+            min_detection_confidence=0.7,
+            min_tracking_confidence=0.7)
         
         self.LANDMARK_GROUPS = [
             #[8, 6, 5, 4, 0, 1, 2, 3, 7],   # eyes
@@ -121,7 +121,7 @@ class pose:
         q2 = np.arcsin(codo[2])
 
         # Ahora resolvemos q1
-        q1 = -np.arctan2(codo[0], codo[1])
+        q1 = np.arctan2(-codo[0], codo[1])
         
         '''
         # Calculo de q3
