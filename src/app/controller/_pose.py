@@ -123,7 +123,7 @@ class pose:
         # Ahora resolvemos q1
         q1 = -np.arctan2(codo[0], codo[1])
         
-        
+        '''
         # Calculo de q3
         AC = coords_rotadas[:,0] - coords_rotadas[:,1]
         BC = coords_rotadas[:,2] - coords_rotadas[:,1]
@@ -135,13 +135,14 @@ class pose:
         
         
 
-        '''muneca = fe.unitario(coords_rotadas[:,2],coords_rotadas[:,1]) + codo
+        muneca = fe.unitario(coords_rotadas[:,2],coords_rotadas[:,1]) + codo
         #print(muneca)
         cos_q3 = (np.sin(q2) * (np.sin(q4)-1) + muneca[1]) / (np.cos(q2) * np.cos(q4))
         cos_q3 = np.clip(cos_q3, -1, 1)
         q3 = np.arccos(cos_q3)
+        
         '''
-        return np.array([q1,q2,q3,q4,0,0,0])
+        return np.array([q1,q2,0,0,0,0,0])
         #print(q1*180/3.14,q2*180/3.14,q4*180/3.14,q3*180/3.14)
         
         

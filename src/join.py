@@ -16,12 +16,10 @@ def angle_callback(data):
     
     # Mapear los ángulos a las articulaciones deseadas
     # (Este mapeo puede necesitar ajuste según el número de ángulos y su correspondencia con las articulaciones)
+    print(angulos)
     jvalues = [0,0,0,0,0,0,0,0]
-    jvalues[1] = 0 - angulos[1]
-    jvalues[2] = 3.14/2 - angulos[0]
-    jvalues[3] = angulos[2]
-    jvalues[4] = -3.14/2 + angulos[3]
-
+    jvalues[1] = angulos[1]
+    jvalues[2] = angulos[0]
     
 
     # Crear un mensaje JointState
