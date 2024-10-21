@@ -45,6 +45,7 @@ class pose:
         ]
         self.results_pose = None
 
+
     def set_pose(self,imagen):
         self.results_pose = self.pose.process(imagen)
         #print(self.results_pose)

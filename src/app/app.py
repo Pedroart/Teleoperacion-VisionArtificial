@@ -47,7 +47,7 @@ class App(ttk.Window):
 
         self.video_buffer = queue.Queue(maxsize=5)
         self.image_pose_buffer = queue.Queue(maxsize=5)
-
+        
 
         rospy.init_node('angle_publisher', anonymous=True)
         self.pub = rospy.Publisher('angle_topic', Float64MultiArray, queue_size=10)
