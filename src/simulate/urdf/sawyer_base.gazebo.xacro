@@ -17,6 +17,7 @@
   <joint name="fixed" type="fixed">
       <parent link="world"/>
       <child link="base"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
 </xacro:if>
 <xacro:if value="$(arg pedestal)">

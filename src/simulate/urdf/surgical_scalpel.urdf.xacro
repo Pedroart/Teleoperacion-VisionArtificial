@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="surgical_scalpel">
+  <xacro:macro name="surgical_scalpel" params="side use_connector_plate gazebo">
+    <xacro:property name="scalpel_side" value="right" scope="local"/>
+    
+    <!-- Base del bisturí - estructura simple -->
+    <link name="right_scalpel_base">
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0.1"/>
+        <geometry>
+          <!-- Representar la hoja del bisturí con un prisma delgado -->
+          <box size="0.01 0.002 0.15"/> <!-- Hoja de bisturí (10mm ancho, 0.2mm grosor, 150mm largo) -->
+        </geometry>
+        <material name="silver">
+          <color rgba="0.8 0.8 0.8 1"/> <!-- Color metálico -->
+        </material>
+      </visual>
+      <collision>
+        <origin rpy="0 0 0" xyz="0 0 0.1"/>
+        <geometry>
+          <!-- Geometría de colisión igual que la visual -->
+          <box size="0.01 0.002 0.15"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <!-- Parámetros inerciales de un bisturí, asumiendo que pesa unos 20 gramos -->
+        <origin rpy="0 0 0" xyz="0 0 0.075"/>
+        <mass value="0.02"/> <!-- 20 gramos -->
+        <inertia ixx="1e-06" ixy="0" ixz="0" iyy="1e-06" iyz="0" izz="1e-06"/>
+      </inertial>
+    </link>
+
+    <!-- Junta entre el bisturí y el brazo del robot -->
+    <joint name="right_scalpel_joint" type="fixed">
+      <origin rpy="0 0 0" xyz="0 0 0.05"/> <!-- El bisturí comienza a 5 cm de la mano -->
+      <parent link="right_hand"/> <!-- El enlace de la mano del robot -->
+      <child link="right_scalpel_base"/> <!-- Base del bisturí como hijo -->
+    </joint>
+
+    <!-- Opciones para Gazebo -->
+    <xacro:if value="${gazebo}">
+      <gazebo reference="right_scalpel_base">
+        <material>Gazebo/Metal</material> <!-- Material metálico para simulación -->
+        <static>false</static> <!-- El bisturí no está fijo en Gazebo -->
+      </gazebo>
+    </xacro:if>
+
+  </xacro:macro>
+</robot>

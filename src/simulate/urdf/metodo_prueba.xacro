@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<robot name="small_cube" xmlns:xacro="http://ros.org/wiki/xacro">
+  <!-- Definir un cubo pequeño de 15cm x 15cm con textura -->
+  <link name="small_cube_link">
+    <visual>
+      <origin xyz="0 0 0.003" rpy="0 0 0"/> <!-- Colocar el cubo en el suelo (0.075m de altura) -->
+      <geometry>
+        <box size="0.25 0.25 0.06"/> <!-- Tamaño del cubo: 15cm x 15cm x 15cm -->
+      </geometry>
+      <material name="texture_material">
+        <texture filename="package://Teleoperacion-VisionArtificial/src/simulate/urdf/pruebatecnica.png"/> <!-- Aplicar la textura -->
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.15 0.15 0.15"/> <!-- Colisión del cubo -->
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.1"/> <!-- Masa del cubo (ajusta según sea necesario) -->
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+</robot>

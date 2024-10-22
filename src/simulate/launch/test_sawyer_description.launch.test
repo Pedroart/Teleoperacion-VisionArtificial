@@ -6,7 +6,7 @@
       your robot for it to function properly again -->
 <launch>
  <!-- Load the URDF into the ROS Parameter Server -->
- <param name="robot_description" command="$(find xacro)/xacro --inorder $(find Teleoperacion-VisionArtificial)/src/urdf/sawyer.urdf.xacro electric_gripper:=true" />
+ <param name="robot_description" command="$(find xacro)/xacro --inorder $(find Teleoperacion-VisionArtificial)/src/simulate/urdf/sawyer.urdf.xacro surgical_scalpel:=true" />
 
  <node pkg="joint_state_publisher" type="joint_state_publisher" name="test_joint_state_publisher" output="screen" args="_use_gui:=true"/>
 

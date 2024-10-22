@@ -41,7 +41,7 @@
     <visual>
       <origin rpy="1.57079632679 0 -1.57079632679" xyz="0.26 0.345 -0.91488"/>
       <geometry>
-        <mesh filename="package://Teleoperacion-VisionArtificial/src/meshes/sawyer_pv/pedestal.DAE"/>
+        <mesh filename="package://Teleoperacion-VisionArtificial/src/simulate/meshes/sawyer_pv/pedestal.DAE"/>
       </geometry>
       <material name="darkgray"/>
     </visual>
@@ -108,7 +108,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://Teleoperacion-VisionArtificial/src/meshes/sawyer_pv/base.DAE"/>
+        <mesh filename="package://Teleoperacion-VisionArtificial/src/simulate/meshes/sawyer_pv/base.DAE"/>
       </geometry>
       <material name="sawyer_red"/>
     </visual>
@@ -128,7 +128,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://Teleoperacion-VisionArtificial/src/meshes/sawyer_mp3/l0.DAE"/>
+        <mesh filename="package://Teleoperacion-VisionArtificial/src/simulate/meshes/sawyer_mp3/l0.DAE"/>
       </geometry>
       <material name="sawyer_red"/>
     </visual>
@@ -158,7 +158,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://Teleoperacion-VisionArtificial/src/meshes/sawyer_pv/head.DAE"/>
+        <mesh filename="package://Teleoperacion-VisionArtificial/src/simulate/meshes/sawyer_pv/head.DAE"/>
       </geometry>
       <material name="sawyer_red"/>
     </visual>
@@ -203,7 +203,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://Teleoperacion-VisionArtificial/src/meshes/sawyer_mp3/l1.DAE"/>
+        <mesh filename="package://Teleoperacion-VisionArtificial/src/simulate/meshes/sawyer_mp3/l1.DAE"/>
       </geometry>
       <material name="sawyer_red"/>
     </visual>
@@ -233,7 +233,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://Teleoperacion-VisionArtificial/src/meshes/sawyer_pv/l2.DAE"/>
+        <mesh filename="package://Teleoperacion-VisionArtificial/src/simulate/meshes/sawyer_pv/l2.DAE"/>
       </geometry>
       <material name="sawyer_red"/>
     </visual>
@@ -263,7 +263,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://Teleoperacion-VisionArtificial/src/meshes/sawyer_pv/l3.DAE"/>
+        <mesh filename="package://Teleoperacion-VisionArtificial/src/simulate/meshes/sawyer_pv/l3.DAE"/>
       </geometry>
       <material name="sawyer_red"/>
     </visual>
@@ -293,7 +293,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://Teleoperacion-VisionArtificial/src/meshes/sawyer_pv/l4.DAE"/>
+        <mesh filename="package://Teleoperacion-VisionArtificial/src/simulate/meshes/sawyer_pv/l4.DAE"/>
       </geometry>
       <material name="sawyer_red"/>
     </visual>
@@ -338,7 +338,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://Teleoperacion-VisionArtificial/src/meshes/sawyer_pv/l5.DAE"/>
+        <mesh filename="package://Teleoperacion-VisionArtificial/src/simulate/meshes/sawyer_pv/l5.DAE"/>
       </geometry>
       <material name="sawyer_red"/>
     </visual>
@@ -382,7 +382,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://Teleoperacion-VisionArtificial/src/meshes/sawyer_mp1/l6.DAE"/>
+        <mesh filename="package://Teleoperacion-VisionArtificial/src/simulate/meshes/sawyer_mp1/l6.DAE"/>
       </geometry>
       <material name="sawyer_red"/>
     </visual>
@@ -531,4 +531,84 @@
     <child link="head_camera"/>
     <axis xyz="0 0 0"/>
   </joint>
+
+ <!-- Definir la esfera entre la base y el bisturí, representando la mano -->
+  <link name="right_hand_sphere">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/> <!-- Colocar la esfera justo entre la mano y el bisturí -->
+      <geometry>
+        <sphere radius="0.05"/> <!-- Esfera de 5 cm de radio -->
+      </geometry>
+      <material name="sawyer_red"> <!-- Usamos el color rojo metálico del robot Sawyer -->
+        <color rgba="1 0 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <sphere radius="0.05"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.2"/> <!-- Asignamos una masa ligera a la esfera -->
+      <inertia ixx="1e-03" ixy="0" ixz="0" iyy="1e-03" iyz="0" izz="1e-03"/>
+    </inertial>
+  </link>
+
+  <!-- Joint entre la mano y la esfera -->
+  <joint name="right_hand_to_sphere_joint" type="fixed">
+    <origin rpy="1.573 0.3 3.14" xyz="0 0 0.05"/> <!-- Colocamos la esfera a 5 cm de la mano -->
+    <parent link="right_hand"/> <!-- La esfera está conectada a la mano -->
+    <child link="right_hand_sphere"/> <!-- La esfera como hijo -->
+  </joint>
+
+  <!-- Definición del bisturí, ahora hijo de la esfera en lugar de la mano -->
+ <link name="right_scalpel_base">
+    <!-- Primera parte del bisturí (10 cm, color plateado) -->
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.05"/> <!-- Colocamos esta parte de 10 cm desde la base -->
+      <geometry>
+        <!-- Representar la primera parte de la hoja del bisturí con un prisma delgado -->
+        <box size="0.01 0.002 0.10"/> <!-- Hoja de bisturí (10mm ancho, 0.2mm grosor, 100mm largo) -->
+      </geometry>
+      <material name="silver">
+        <color rgba="0.8 0.8 0.8 1"/> <!-- Color metálico plateado -->
+      </material>
+    </visual>
+
+    <!-- Segunda parte del bisturí (5 cm, color verde) -->
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.125"/> <!-- Colocamos esta parte de 5 cm justo después de la primera -->
+      <geometry>
+        <!-- Representar la segunda parte de la hoja del bisturí con un prisma delgado -->
+        <box size="0.01 0.002 0.05"/> <!-- Hoja de bisturí (10mm ancho, 0.2mm grosor, 50mm largo) -->
+      </geometry>
+      <material name="green">
+        <color rgba="0 1 0 1"/> <!-- Color verde para la punta del bisturí -->
+      </material>
+    </visual>
+
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.10"/>
+      <geometry>
+        <!-- Geometría de colisión para toda la hoja del bisturí (15 cm) -->
+        <box size="0.01 0.002 0.15"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <!-- Parámetros inerciales de un bisturí, asumiendo que pesa unos 20 gramos -->
+      <origin rpy="0 0 0" xyz="0 0 0.075"/> <!-- Centro de masa ajustado -->
+      <mass value="0.02"/> <!-- 20 gramos -->
+      <inertia ixx="1e-06" ixy="0" ixz="0" iyy="1e-06" iyz="0" izz="1e-06"/>
+    </inertial>
+  </link>
+
+  <!-- Joint entre la esfera y el bisturí -->
+  <joint name="right_sphere_to_scalpel_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/> <!-- Colocar el bisturí encima de la esfera -->
+    <parent link="right_hand_sphere"/> <!-- La esfera es el padre del bisturí -->
+    <child link="right_scalpel_base"/> <!-- El bisturí es el hijo -->
+  </joint>
+  
 </robot>

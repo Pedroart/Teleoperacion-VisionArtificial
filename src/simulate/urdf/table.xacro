@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<robot name="simple_table" xmlns:xacro="http://ros.org/wiki/xacro">
+  <!-- Dimensiones fijas de la mesa -->
+  <property name="table_length" value="1.5"/>  <!-- Largo fijo de la mesa: 1.5 metros -->
+  <property name="table_width" value="0.75"/>  <!-- Ancho fijo de la mesa: 0.75 metros -->
+  <property name="table_height" value="0.75"/> <!-- Altura fija de la mesa: 0.75 metros -->
+
+  <!-- Definir el tablero de la mesa -->
+  <link name="table_top">
+    <visual>
+      <origin xyz="0 0 ${table_height}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${table_length} ${table_width} 0.05"/> <!-- Tablero con grosor fijo de 5 cm -->
+      </geometry>
+      <material name="brown">
+        <color rgba="0.545 0.271 0.075 1.0"/> <!-- Color marrón para el tablero -->
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${table_height}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${table_length} ${table_width} 0.05"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 ${table_height}" rpy="0 0 0"/>
+      <mass value="20"/> <!-- Masa estimada del tablero -->
+      <inertia ixx="10.0" ixy="0.0" ixz="0.0" iyy="10.0" iyz="0.0" izz="10.0"/>
+    </inertial>
+  </link>
+
+  <!-- Definir las patas de la mesa -->
+  <xacro:macro name="table_leg" params="leg_name x_offset y_offset">
+    <link name="${leg_name}">
+      <visual>
+        <origin xyz="${x_offset} ${y_offset} ${table_height * 0.5}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.05" length="${table_height}"/> <!-- Patas de la mesa de 0.75 m -->
+        </geometry>
+        <material name="darkgray">
+          <color rgba="0.2 0.2 0.2 1.0"/> <!-- Color gris oscuro para las patas -->
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="${x_offset} ${y_offset} ${table_height * 0.5}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.05" length="${table_height}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <origin xyz="${x_offset} ${y_offset} ${table_height * 0.5}" rpy="0 0 0"/>
+        <mass value="5"/> <!-- Masa de cada pata -->
+        <inertia ixx="0.5" ixy="0.0" ixz="0.0" iyy="0.5" iyz="0.0" izz="0.5"/>
+      </inertial>
+    </link>
+  </xacro:macro>
+
+  <!-- Cuatro patas de la mesa con posiciones fijas -->
+  <xacro:table_leg leg_name="table_leg_1" x_offset="${table_length * 0.5 - 0.05}" y_offset="${table_width * 0.5 - 0.05}"/>
+  <xacro:table_leg leg_name="table_leg_2" x_offset="${table_length * 0.5 - 0.05}" y_offset="-${table_width * 0.5 - 0.05}"/>
+  <xacro:table_leg leg_name="table_leg_3" x_offset="-${table_length * 0.5 - 0.05}" y_offset="${table_width * 0.5 - 0.05}"/>
+  <xacro:table_leg leg_name="table_leg_4" x_offset="-${table_length * 0.5 - 0.05}" y_offset="-${table_width * 0.5 - 0.05}"/>
+
+  <!-- Joints para conectar las patas al tablero -->
+  <joint name="table_leg_1_joint" type="fixed">
+    <parent link="table_top"/>
+    <child link="table_leg_1"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="table_leg_2_joint" type="fixed">
+    <parent link="table_top"/>
+    <child link="table_leg_2"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="table_leg_3_joint" type="fixed">
+    <parent link="table_top"/>
+    <child link="table_leg_3"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="table_leg_4_joint" type="fixed">
+    <parent link="table_top"/>
+    <child link="table_leg_4"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+</robot>
