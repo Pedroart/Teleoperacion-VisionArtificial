@@ -154,7 +154,10 @@ def calculo_angulos(results):
             muneca_derecha
         )
 
-        q = [q1,q2,0,q4,0,0,0]
+        dire_codo =unitario(np.cross(hombro_derecho-codo_derecho, muneca_derecha-codo_derecho))
+        q3 = np.arcsin(dire_codo[2] / np.sin(q2) )
+
+        q = [q1,q2,q3,q4,0,0,0]
         return q
 
 # Main code
