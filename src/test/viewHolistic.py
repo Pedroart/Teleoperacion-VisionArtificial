@@ -104,6 +104,39 @@ def drawDebugViews(results, hand_points, hcp, hncp, hand_points_norm, pitchmode)
         cv2.moveWindow('XY Plane (Front View)', 0, 0)
         drawDebugViews.views_moved = True
 
+def unitario(fin,inicio = np.array([0, 0, 0])):
+    vector_ = fin-inicio
+    return vector_/np.linalg.norm(vector_)
+
+def calculo_angulos(results):
+    
+    if results.pose_world_landmarks is not None:
+        last = None
+        names = ['Wrist', 'Elbow', 'Shoulder']
+        joints = [mp_pose.PoseLandmark.RIGHT_WRIST, mp_pose.PoseLandmark.RIGHT_ELBOW, mp_pose.PoseLandmark.RIGHT_SHOULDER]
+
+        # Put all the world landmark positions for the joints into numpy array
+        world_landmarks = np.array(
+            [[-results.pose_world_landmarks.landmark[i].z, results.pose_world_landmarks.landmark[i].x, -results.pose_world_landmarks.landmark[i].y] for i in joints])
+
+        # Extraer las coordenadas del hombro y el codo
+        hombro_derecho = world_landmarks[2]  # Coordenadas del hombro derecho
+        codo_derecho = world_landmarks[1]    # Coordenadas del codo derecho
+        muneca_derecha = world_landmarks[0]  # Coordenadas de la muñeca derecha
+
+
+        # Calcular el vector que va desde el hombro hacia el codo
+        Vector_Arm_direct = unitario(codo_derecho,hombro_derecho)
+
+        # Calcular el vector que va desde el codo hacia la muñeca
+        Vector_Elbow_direct = unitario(muneca_derecha,codo_derecho)
+
+        q2 = -np.arccos(Vector_Arm_direct[2])
+        q1 = np.arctan2(Vector_Arm_direct[0], Vector_Arm_direct[1])
+        
+        q = [q1,q2]
+        print(q)
+
 # Main code
 parser = argparse.ArgumentParser()
 parser.add_argument('--nodebug', action='store_true', help='Disable debug views')
@@ -146,7 +179,7 @@ with mp_holistic.Holistic(
 
         if results.pose_world_landmarks:
             drawDebugViews(results, None, None, None, None, None)
-
+            calculo_angulos(results)
         flipped_image = cv2.flip(image, 1)
         cv2.imshow('MediaPipe Pose', flipped_image)
 
