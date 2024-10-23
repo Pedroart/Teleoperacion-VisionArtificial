@@ -7,6 +7,10 @@ import opencv_cam
 import struct
 import time
 
+import rospy
+from std_msgs.msg import String
+from std_msgs.msg import Float64MultiArray
+
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
@@ -134,16 +138,23 @@ def calculo_angulos(results):
         q2 = -np.arccos(Vector_Arm_direct[2])
         q1 = np.arctan2(Vector_Arm_direct[0], Vector_Arm_direct[1])
         
-        q = [q1,q2]
-        print(q)
+        q = [q1,q2,0,0,0,0,0]
+        return q
 
 # Main code
+
+rospy.init_node('angle_publisher', anonymous=True)
+pub = rospy.Publisher('angle_topic', Float64MultiArray, queue_size=10)
+
+rate = rospy.Rate(20) # 20hz
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--nodebug', action='store_true', help='Disable debug views')
 args = parser.parse_args()
 show_debug_views = not args.nodebug
 
-cvcam = opencv_cam.OpenCVCam(cam_id=1,width=1920, height=1080)  # Use webcam by default
+cvcam = opencv_cam.OpenCVCam(cam_id=2,width=1920, height=1080)  # Use webcam by default
 
 if cvcam.start() is False:
     print("Failed to start video capture - exiting.")
@@ -179,7 +190,15 @@ with mp_holistic.Holistic(
 
         if results.pose_world_landmarks:
             drawDebugViews(results, None, None, None, None, None)
-            calculo_angulos(results)
+            angulos = calculo_angulos(results)
+            msg = Float64MultiArray()
+
+            msg.data = angulos
+            
+            # Publica el mensaje
+            pub.publish(msg)
+
+
         flipped_image = cv2.flip(image, 1)
         cv2.imshow('MediaPipe Pose', flipped_image)
 
