@@ -112,6 +112,15 @@ def unitario(fin,inicio = np.array([0, 0, 0])):
     vector_ = fin-inicio
     return vector_/np.linalg.norm(vector_)
 
+def angle(a, b, c):
+    # a, b y c: puntos como np.array([x, y, z])
+    ba = a - b
+    bc = c - b
+    cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+    angle = np.arccos(cosine_angle)
+
+    return np.degrees(angle)
+
 def calculo_angulos(results):
     
     if results.pose_world_landmarks is not None:
@@ -138,7 +147,14 @@ def calculo_angulos(results):
         q2 = -np.arccos(Vector_Arm_direct[2])
         q1 = np.arctan2(Vector_Arm_direct[0], Vector_Arm_direct[1])
         
-        q = [q1,q2,0,0,0,0,0]
+
+        q4 = angle(
+            hombro_derecho, 
+            codo_derecho, 
+            muneca_derecha
+        )
+
+        q = [q1,q2,0,q4,0,0,0]
         return q
 
 # Main code
