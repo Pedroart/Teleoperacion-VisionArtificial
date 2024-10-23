@@ -119,7 +119,7 @@ def angle(a, b, c):
     cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
     angle = np.arccos(cosine_angle)
 
-    return np.degrees(angle)
+    return angle
 
 def calculo_angulos(results):
     
