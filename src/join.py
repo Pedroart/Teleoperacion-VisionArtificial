@@ -22,6 +22,9 @@ def angle_callback(data):
     jvalues[2] = angulos[1]-1.57
     jvalues[3] = angulos[2]
     jvalues[4] = -angulos[3]+3.14
+    jvalues[5] = angulos[4]
+    jvalues[6] = angulos[6]
+    jvalues[7] = angulos[5]
     
     #configuracion directa
 
