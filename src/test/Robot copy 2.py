@@ -182,6 +182,7 @@ def limitar_angulo(q):
     return (q + np.pi) % (2 * np.pi) - np.pi  # Modulo para mantener q entre [-pi, pi]
 
 
+
 while not rospy.is_shutdown():
     init_time = time.time()  # Medir tiempo después de la inicialización
 
@@ -200,7 +201,7 @@ while not rospy.is_shutdown():
     e =    x_actual - x_des
     e[3:] =calculate_omega(x_actual[3],x_actual[4],*e[3:])
 
-    if np.linalg.norm(e[0:3]) < 1e-1 and np.linalg.norm(e[3:]) < 1:
+    if np.linalg.norm(e[0:3]) < 1e-2 and np.linalg.norm(e[3:]) < 1:
         break
 
     # Obtener el Jacobiano del robot
@@ -210,13 +211,13 @@ while not rospy.is_shutdown():
 
 
     # Calcular la pseudoinversa del Jacobiano
-    Ji = np.linalg.pinv(J)
-
+    #Ji = np.linalg.pinv(J)
+    k = 0.1
+    Ji = J.T @ np.linalg.inv(( J @ J.T + (k**2) * np.eye(6) ) )
    
     # Calcular el cambio en las velocidades articulares
     #dq = (Ji @ e) * (-0.2)
-    k = 0.1
-    dq = J.T @ np.linalg.inv(( J @ J.T + (k**2) * np.eye(6) ) ) @ (-e)
+    dq = Ji @ (-e)
 
     print(dq)
     # Actualizar los valores de q
@@ -226,7 +227,7 @@ while not rospy.is_shutdown():
     #q_new = np.array([limitar_angulo(qi) for qi in q_new])
     #print(e,x_actual,q_new)
     
-    print(q_new)
+    print(init_time - time.time())
 
     SawyerRobot.set_q_values(q_new)
 
@@ -236,3 +237,4 @@ while not rospy.is_shutdown():
     pub.publish(msg)
 
     rate.sleep()
+

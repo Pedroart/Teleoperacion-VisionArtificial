@@ -137,63 +137,16 @@ def calculo_angulos(results):
         hombro_derecho = world_landmarks[2]  # Coordenadas del hombro derecho
         codo_derecho = world_landmarks[1]    # Coordenadas del codo derecho
         muneca_derecha = world_landmarks[0]  # Coordenadas de la muneca derecha
+
         print(muneca_derecha)
-
-        # Calcular el vector que va desde el hombro hacia el codo
-        Vector_Arm_direct = unitario(codo_derecho,hombro_derecho)
-
-        # Calcular el vector que va desde el codo hacia la muneca
-        Vector_Elbow_direct = unitario(muneca_derecha,codo_derecho)
-
-        q2 = -np.arccos(Vector_Arm_direct[2])
-        q1 = np.arctan2(Vector_Arm_direct[0], Vector_Arm_direct[1])
-        
-
-        q4 = angle(
-            hombro_derecho, 
-            codo_derecho, 
-            muneca_derecha
-        )
-
-        dire_codo =unitario(np.cross(hombro_derecho-codo_derecho, muneca_derecha-codo_derecho))
-        q3 = np.arcsin(dire_codo[2] / np.sin(q2) )
-        q6 = 0
-        if results.right_hand_landmarks is not None:
-            muneca = np.array([results.right_hand_landmarks.landmark[mp_hand.HandLandmark.WRIST].x,
-                            results.right_hand_landmarks.landmark[mp_hand.HandLandmark.WRIST].y,
-                            results.right_hand_landmarks.landmark[mp_hand.HandLandmark.WRIST].z])
-
-            dedo_indice = np.array([results.right_hand_landmarks.landmark[mp_hand.HandLandmark.INDEX_FINGER_MCP].x,
-                                    results.right_hand_landmarks.landmark[mp_hand.HandLandmark.INDEX_FINGER_MCP].y,
-                                    results.right_hand_landmarks.landmark[mp_hand.HandLandmark.INDEX_FINGER_MCP].z])
-
-            meñique = np.array([results.right_hand_landmarks.landmark[mp_hand.HandLandmark.PINKY_MCP].x,
-                                results.right_hand_landmarks.landmark[mp_hand.HandLandmark.PINKY_MCP].y,
-                                results.right_hand_landmarks.landmark[mp_hand.HandLandmark.PINKY_MCP].z])
-
-            # Calcular los vectores muneca -> dedo índice y muneca -> meñique
-            vector_muneca_indice = dedo_indice - muneca
-            vector_muneca_meñique = meñique - muneca
-
-            # Calcular el ángulo entre los vectores usando el producto punto
-            cos_theta = np.dot(vector_muneca_indice, vector_muneca_meñique) / (
-                np.linalg.norm(vector_muneca_indice) * np.linalg.norm(vector_muneca_meñique))
-
-            # Asegurarse de que el coseno está dentro del rango [-1, 1] para evitar errores numéricos
-            cos_theta = np.clip(cos_theta, -1.0, 1.0)
-
-            # Calcular el ángulo en radianes y luego convertirlo a grados
-            q6 = np.arccos(cos_theta)
-
-        q = [q1,q2,q3,q4,0,q6,0]
-        return q
+        return muneca_derecha
 
 # Main code
 
 rospy.init_node('angle_publisher', anonymous=True)
-pub = rospy.Publisher('angle_topic', Float64MultiArray, queue_size=10)
+pub = rospy.Publisher('desired_position', Float64MultiArray, queue_size=10)
 
-rate = rospy.Rate(20) # 20hz
+rate = rospy.Rate(100) # 20hz
 
 
 parser = argparse.ArgumentParser()
@@ -237,10 +190,11 @@ with mp_holistic.Holistic(
 
         if results.pose_world_landmarks:
             drawDebugViews(results, None, None, None, None, None)
-            angulos = calculo_angulos(results)
+            angulo = np.array([1.57079633, 0, 1.57079633])
+            pose = np.concatenate((calculo_angulos(results),angulo))
             msg = Float64MultiArray()
 
-            msg.data = angulos
+            msg.data = pose
             
             # Publica el mensaje
             pub.publish(msg)
