@@ -18,13 +18,13 @@ def angle_callback(data):
     # (Este mapeo puede necesitar ajuste según el número de ángulos y su correspondencia con las articulaciones)
     print(angulos)
     jvalues = [0,0,0,0,0,0,0,0]
-    jvalues[1] = angulos[0]#+1.57
-    jvalues[2] = angulos[1]#-1.57
+    jvalues[1] = angulos[0]+1.57
+    jvalues[2] = angulos[1]-1.57
     jvalues[3] = angulos[2]
-    jvalues[4] = angulos[3]#+3.14
+    jvalues[4] = -angulos[3]+3.14
     jvalues[5] = angulos[4]
-    jvalues[6] = angulos[5]
-    jvalues[7] = angulos[6]
+    jvalues[6] = angulos[6]
+    jvalues[7] = angulos[5]
     
     #configuracion directa
 
