@@ -144,7 +144,7 @@ class RobotController:
         self.x_des = np.array(msg.data)
 
     def control_loop(self):
-        max_error = 0.5
+        max_error = 0.1
         while not rospy.is_shutdown():
             if self.x_des is None:
                 rospy.loginfo("Waiting for desired position...")

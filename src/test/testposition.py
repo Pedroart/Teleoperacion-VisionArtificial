@@ -3,59 +3,35 @@ import rospy
 import numpy as np
 from std_msgs.msg import Float64MultiArray
 
-def random_step_in_sphere(current_position, max_step=0.1, radius=0.9):
-    """
-    Genera una nueva posición cercana a la actual, asegurándose de que
-    permanece dentro de una esfera de un radio dado y que x es positiva.
-    """
-    while True:
-        # Generar un pequeño paso aleatorio
-        step = np.random.uniform(-max_step, max_step, 3)
-        new_position = current_position + step
-
-        # Asegurarse de que la posición x es positiva y está dentro de la esfera
-        if new_position[0] >= 0.4 and np.linalg.norm(new_position) <= radius:
-            break
-
-    return new_position
-
-def random_position_in_sphere(radius=0.9):
-    """
-    Inicializa la posición inicial aleatoriamente dentro de la esfera,
-    asegurando que x sea positivo.
-    """
-    while True:
-        position = np.random.uniform(-radius, radius, 3)
-        if position[0] >= 0 and np.linalg.norm(position) <= radius:
-            return position
-
-def publish_random_positions(rate_hz=1):
-    rospy.init_node('random_position_publisher', anonymous=True)
+def publish_fixed_trajectory():
+    rospy.init_node('trajectory_publisher', anonymous=True)
     pub = rospy.Publisher('desired_position', Float64MultiArray, queue_size=10)
-    rate = rospy.Rate(rate_hz)
 
-    # Inicializar posición aleatoria
-    current_position = random_position_in_sphere()
-    orientation = np.array([1.57079633, 0, 1.57079633])
+    # Definir tres puntos fijos que cumplen con los requisitos
+    trajectory = [
+        np.array([0.5, 0.3, 0.4]),
+        np.array([0.5, 0.3, 0.4]),
+        np.array([0.6, 0.2, 0.5]),
+        np.array([0.8, 0.1, 0.6])
+    ]
+    orientation = np.array([1.57079633, 0, 1.57079633])  # Orientación fija
 
-    while not rospy.is_shutdown():
-        # Generar una nueva posición cercana a la actual
-        current_position = random_step_in_sphere(current_position)
-        random_pose = np.concatenate((current_position, orientation))
+    for point in trajectory:
+        # Combina la posición con la orientación
+        pose = np.concatenate((point, orientation))
 
         # Crear y publicar el mensaje
         msg = Float64MultiArray()
-        msg.data = random_pose
+        msg.data = pose
         pub.publish(msg)
 
-        rospy.loginfo(f"Published random position: {random_pose}")
+        rospy.loginfo(f"Published fixed point in trajectory: {pose}")
 
-        # Añadir un delay de 2 segundos
-        rospy.sleep(5)
-        rate.sleep()
+        # Delay de 2 segundos entre puntos
+        rospy.sleep(15)
 
 if __name__ == '__main__':
     try:
-        publish_random_positions(rate_hz=1)
+        publish_fixed_trajectory()
     except rospy.ROSInterruptException:
         pass
