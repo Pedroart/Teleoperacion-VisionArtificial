@@ -5,6 +5,10 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 import time
 
+from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Point
+from std_msgs.msg import ColorRGBA
+
 import rospy
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import JointState
@@ -84,6 +88,9 @@ class Robot:
 
     def get_q_values(self):
         return np.array(self.q_values)
+    
+    def get_publish_q_values(self):
+        return np.concatenate(([0], self.q_values))
 
     def cinematica_directa(self, params_dh):
         T_total = sp.eye(4)
@@ -115,100 +122,68 @@ class Robot:
         return sp.Matrix.vstack(sp.Matrix.hstack(*J_linear), sp.Matrix.hstack(*J_angular))
 
 
-# Initialize the robot and ROS node
-SawyerRobot = Robot()
-rospy.init_node('angle_publisher', anonymous=True)
-pub = rospy.Publisher('angle_topic', Float64MultiArray, queue_size=10)
-rate = rospy.Rate(1000)
+# Inicializar el nodo de ROS y configurar la clase de robot
+rospy.init_node("kinematics_visualizer")
+robot = Robot()
 
-while pub.get_num_connections() == 0:
-    rospy.loginfo("Waiting for connections on 'angle_topic'...")
-    rospy.sleep(1)
+# Publicador para el marcador en RViz
+marker_pub = rospy.Publisher("visualization_marker", Marker, queue_size=10)
+joint_state_pub = rospy.Publisher("joint_states", JointState, queue_size=10)
+rate = rospy.Rate(10)  # Frecuencia de publicación en Hz
 
+joint_names = ["head_pan", "right_j0", "right_j1", "right_j2", "right_j3",
+               "right_j4", "right_j5", "right_j6"]
 
-# Helper functions
-def calculate_omega(phi_r, phi_p, phi_dot_r, phi_dot_p, phi_dot_y):
-    transformation_matrix = np.array([
-        [0, -np.sin(phi_r), np.cos(phi_r) * np.cos(phi_p)],
-        [0, np.cos(phi_r), np.sin(phi_r) * np.cos(phi_p)],
-        [1, 0, -np.sin(phi_p)]
-    ])
-    phi_dot_vector = np.array([phi_dot_r, phi_dot_p, phi_dot_y])
-    return np.dot(transformation_matrix, phi_dot_vector)
-
-
-def limitar_angulo(q):
-    return (q + np.pi) % (2 * np.pi) - np.pi  # Keep q between [-pi, pi]
-
-def regularized_pseudoinverse(J, k):
+def create_marker(position, marker_id=0):
     """
-    Calcula la pseudoinversa regularizada de una matriz Jacobiana J.
-    
+    Crea un marcador de RViz para visualizar el efector final.
+
     Parámetros:
-    J (numpy.ndarray): La matriz Jacobiana.
-    k (float): El parámetro de regularización.
+    - position: Posición [x, y, z] del marcador.
+    - marker_id: ID único para el marcador.
 
     Retorna:
-    numpy.ndarray: La pseudoinversa regularizada de J.
+    - Marker: Mensaje de marcador configurado.
     """
-    # Calcular la pseudoinversa regularizada
-    J_reg_inv = J.T @ np.linalg.inv(J @ J.T + (k ** 2) * np.eye(J.shape[0]))
-    return J_reg_inv
+    marker = Marker()
+    marker.header.frame_id = "base"  # Cambia esto al marco de referencia base de tu robot
+    marker.header.stamp = rospy.Time.now()
+    marker.ns = "end_effector"
+    marker.id = marker_id
+    marker.type = Marker.SPHERE
+    marker.action = Marker.ADD
 
-# Control loop
-max_error = 0.5
+    # Configurar la posición del marcador
+    marker.pose.position.x = position[0]
+    marker.pose.position.y = position[1]
+    marker.pose.position.z = position[2]
+
+    # Configuración del marcador: escala y color
+    marker.scale.x = 0.05  # Tamaño del marcador
+    marker.scale.y = 0.05
+    marker.scale.z = 0.05
+    marker.color = ColorRGBA(0.0, 1.0, 0.0, 1.0)  # Verde con opacidad completa
+
+    return marker
+
 while not rospy.is_shutdown():
-    init_time = time.time()
+    random_q_values = np.random.uniform(np.pi, -np.pi, 7)
+    # Ejecutar set_q_values con los valores generados
+    robot.set_q_values(random_q_values)
+    # Obtener la posición del efector final a partir de la cinemática directa
+    T_end_effector = robot.tWrist  # Usamos la pose calculada en `update`
+    end_effector_position = T_end_effector[:3, 3]
 
-    # Desired end-effector position and orientation
-    x_des = np.array([0.8, 0.4, 0.4, 1.57079633, 0, 1.57079633])
-    # Current end-effector pose
-    x_actual = SawyerRobot.xWrist_actual
+    # Crear y publicar el marcador de posición
+    marker = create_marker(end_effector_position)
+    marker_pub.publish(marker)
 
+    # Crear el mensaje JointState
+    joint_state_msg = JointState()
+    joint_state_msg.name = joint_names
+    joint_state_msg.position = robot.get_publish_q_values()#.tolist()
+    joint_state_msg.header.stamp = rospy.Time.now()
+    joint_state_pub.publish(joint_state_msg)
 
-    # Calculate error1
-    e = x_actual - x_des
-    e = np.clip(x_actual - x_des, -max_error, max_error) 
-    e[3:] = calculate_omega(x_actual[3], x_actual[4], *e[3:])
-
-    e1 = e.copy()
-    e2 = e.copy()
-    e2[:3] *= 0
-    e1[3:] *= 0
-
-    if np.linalg.norm(e[:3]) < 1e-1:
-        break
-
-    # Robot Jacobian
-    J = SawyerRobot.jWrist
-    J1 = J.copy()
-    J2 = J.copy()
-    J2[0:3] *= 0
-    J1[3:]  *= 0
-
-   
-
-    # Jacobian pseudoinverse
-    k = 0.1
-    #Ji = J.T @ np.linalg.inv(J @ J.T + (k ** 2) * np.eye(6))
-    Ji1 = regularized_pseudoinverse(J1,1e-1)
-    
-    print(Ji1)
-    # Update joint velocities and positions
-    #dq = Ji @ (-e)
-    P1 = (np.eye(7) - Ji1 @ J1)
-    #dq = Ji1 @ (-e1.T)
-    dq = Ji1 @ (-e1.T) + regularized_pseudoinverse(J2 @ P1,k) @ (-e2.T + J2 @ Ji1 @ e1.T)
-
-    print(e1)
-
-    q_new = SawyerRobot.get_q_values() + dq * 0.01
-
-    SawyerRobot.set_q_values(q_new)
-
-    # Publish updated joint values
-    msg = Float64MultiArray()
-    msg.data = q_new
-    pub.publish(msg)
-
-    rate.sleep()
+    print(joint_state_msg)
+    rospy.sleep(5)

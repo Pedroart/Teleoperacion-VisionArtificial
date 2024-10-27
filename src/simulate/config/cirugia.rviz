@@ -7,8 +7,11 @@ Panels:
         - /Global Options1
         - /Status1
         - /RobotModel1
-        - /RobotModel2
-        - /RobotModel3
+        - /RobotModel1/Links1
+        - /RobotModel1/Links1/right_l61
+        - /RobotModel1/Links1/right_l61/Orientation1
+        - /Marker1
+        - /TF1
       Splitter Ratio: 0.5
     Tree Height: 407
   - Class: rviz/Selection
@@ -54,7 +57,7 @@ Visualization Manager:
       Plane Cell Count: 10
       Reference Frame: <Fixed Frame>
       Value: true
-    - Alpha: 1
+    - Alpha: 0.5
       Class: rviz/RobotModel
       Collision Enabled: false
       Enabled: true
@@ -236,6 +239,31 @@ Visualization Manager:
       Update Interval: 0
       Value: true
       Visual Enabled: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: visualization_marker
+      Name: Marker
+      Namespaces:
+        end_effector: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/TF
+      Enabled: false
+      Filter (blacklist): ""
+      Filter (whitelist): ""
+      Frame Timeout: 15
+      Frames:
+        All Enabled: true
+      Marker Alpha: 1
+      Marker Scale: 1
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Tree:
+        {}
+      Update Interval: 0
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 238; 238; 236
@@ -264,7 +292,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.0996805429458618
+      Distance: 1.4053747653961182
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -272,17 +300,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.5451352000236511
-        Y: -0.020356297492980957
-        Z: 0.03754758834838867
+        X: 0.696963906288147
+        Y: 0.18278980255126953
+        Z: 0.46673426032066345
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6393081545829773
+      Pitch: 0.659796416759491
       Target Frame: <Fixed Frame>
-      Yaw: 5.620161533355713
+      Yaw: 2.1219820976257324
     Saved: ~
 Window Geometry:
   Displays:
