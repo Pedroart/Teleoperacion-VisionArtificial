@@ -37,7 +37,7 @@ class Robot:
             [self.q[4], 0.4, 0, -sp.pi / 2],
             [self.q[5] + sp.pi, 0.1363, 0, -sp.pi / 2],
             [self.q[6] - sp.pi / 2, 0.11, 8.08E-07, 0],
-            [0, 0.1, 1, 0]
+            [0, 0.0, 0.030, 0]
         ]
         
 
@@ -153,7 +153,7 @@ class Robot:
         # Inicializar listas para Jacobiano lineal y Jacobiano angular
         J_linear = []
         J_angular = []
-        z = [sp.Matrix([0, 0, 1])]
+
         # Cálculo del Jacobiano utilizando derivadas parciales
         longitud = len(params_dh)
 
@@ -165,14 +165,13 @@ class Robot:
             Jv_i = p_n.diff(self.q[i])  # Derivada parcial de la posición con respecto a q_i
             J_linear.append(Jv_i)
             
-            z.append(T_total[:3, 2])
-            '''# Derivada parcial de la orientación con respecto a q_i (Jacobian angular)
+            # Derivada parcial de la orientación con respecto a q_i (Jacobian angular)
             R_i = T_list[i][:3, :3]  # Extrae la matriz de rotación hasta la articulación i
             R_efector = T_total[:3, :3]  # Matriz de rotación final del efector
             R_error = R_efector * R_i.T  # Rotación relativa entre el efector y el eje articular
             Jw_i = sp.Matrix([R_error[2, 1], R_error[0, 2], R_error[1, 0]])  # Representa la orientación como un vector de rotación
-            J_angular.append(Jw_i)'''
-        J_angular = z[:longitud]
+            J_angular.append(Jw_i)
+
         # Concatenar el Jacobiano lineal y angular
         return sp.Matrix.vstack(sp.Matrix.hstack(*J_linear), sp.Matrix.hstack(*J_angular))
 
@@ -328,8 +327,9 @@ def generalized_task_augmentation(q, J_tasks, errors, deltaT=1, u=np.sqrt(0.001)
     q_new = q + q_dot * deltaT
     return q_new, q_dot
 
+desired_direction = np.array([0, 1, 0])  # Aquí elige la dirección deseada
 
-def calculate_orientation_error(T_link, desired_direction, link_axis=np.array([0, 1, 0])):
+def calculate_orientation_error(T_link, desired_direction, link_axis=np.array([0, 0, 1])):
     """
     Calcula el error de orientación entre el eje deseado de un eslabón y una dirección en el espacio.
     
@@ -350,81 +350,89 @@ def calculate_orientation_error(T_link, desired_direction, link_axis=np.array([0
     
     return orientation_error
 
-desired_direction = np.array([0, 0, 1]) 
-
-point_wrist = np.array([0.8, 0.3, 0.1])
-point_elbow = np.array([0.3, 0.3, 0.5])
-
-# Calcular el vector de dirección entre el codo y la muñeca
-vector_direction = point_wrist - point_elbow
-# Normalizar el vector para obtener el vector unitario
-unit_vector = (vector_direction / np.linalg.norm(vector_direction)) * 0.1
-unit_vector[2] = -1
-
-point_Scalpel = point_wrist + unit_vector
-
-print(point_wrist,point_Scalpel)
-
-T_desired = create_transformation_matrix(*point_wrist)
-T_Elbow = create_transformation_matrix(*point_elbow)
-T_Scalpel = create_transformation_matrix(*point_Scalpel)
 
 
+T_desired = create_transformation_matrix(0.8, 0.3, 0.1)
+T_Scalpel = create_transformation_matrix(0.8, 0.3, 0.1)
 
-kpp = 1;
-kpr = 0.1;
+T_Elbow = create_transformation_matrix(0.3, 0.3, 0.5)
+
+kpp = 0.1;
+kpr = 1;
 kpe = 1;
 
-while not rospy.is_shutdown():
+desired_direction_y = np.array([0, 0, 1])  # Dirección hacia arriba para el eje Y del efector
+
+def calculate_y_orientation_error(T_end_effector, desired_direction, link_axis=np.array([0, 1, 0])):
+    """
+    Calcula el error de orientación para alinear el eje Y del efector final hacia la dirección deseada (arriba).
     
-    # Obtener la posición del efector final a partir de la cinemática directa
-    T_end_effector = robot.tWrist  # Usamos la pose calculada en `update`
-    print(T_end_effector)
-    e = calculate_pose_error(robot.tWrist , T_desired)
-    e1 = e[0:3]/kpp
-    e2 = calculate_orientation_error(robot.tWrist,desired_direction)
-    #e2 = e[0:3]/kpr
-    #e2 = calculate_pose_error(robot.tScalpel , T_Scalpel)[0:3]
+    Parámetros:
+    - T_end_effector (np.ndarray): Matriz de transformación 4x4 del efector final.
+    - desired_direction (np.ndarray): Vector de dirección deseada en el espacio (por ejemplo, [0, 0, 1] para apuntar hacia arriba).
+    - link_axis (np.ndarray): Eje del efector que debería apuntar hacia la dirección deseada (por defecto, el eje Y).
+    
+    Retorna:
+    - orientation_error (np.ndarray): Vector de error de orientación como un vector rotacional.
+    """
+    # Extraer la rotación del efector en el espacio
+    R_end_effector = T_end_effector[:3, :3]
+    # Calcular el eje actual del efector proyectado en el espacio global
+    current_direction = R_end_effector @ link_axis
+    # Error de orientación como el producto vectorial entre la dirección deseada y la actual
+    orientation_error = np.cross(current_direction, desired_direction)
+    
+    return orientation_error
+
+# En el bucle de control principal
+while not rospy.is_shutdown():
+    # Obtener la pose del efector final
+    T_end_effector = robot.tWrist
+
+    # Calcular el error de posición y orientación del efector final
+    e = calculate_pose_error(T_end_effector, T_desired)
+    e1 = e[:3] / kpp
+    e2 = e[3:] / kpr
+
+    # Calcular el error de orientación para el eje Y del efector final apuntando hacia arriba
+    orientation_error_y = calculate_y_orientation_error(T_end_effector, desired_direction_y) / kpr
 
     e = calculate_pose_error(robot.tElbow, T_Elbow)
     e3 = e[0:3]/kpe
 
-    
-    J1 = robot.jWrist[0:3]
-    #J2 = robot.jScalpel[0:3]
-    J2 = robot.jWrist[3:]
+    # Agregar esta tarea de orientación a las tareas existentes
+    J_orientation_y = robot.jWrist[3:]  # Parte angular del Jacobiano del efector final
+    print(orientation_error_y)
+    # Lista de Jacobianos y errores de las tareas
     J3 = robot.jElbow[0:3]
-    print(e2)
-
 
     J_tasks = [
-        J1,
-        J2,
+        robot.jWrist[:3],       # Jacobiano para la tarea de posición
+        J_orientation_y,         # Jacobiano para la tarea del eje Y
+        #robot.jWrist[3:],       # Jacobiano para la tarea de orientación
         J3,
     ]
     errors = [
-        e1,
-        e2,
+        e1,                     # Error de posición
+        orientation_error_y,     # Error para alinear el eje Y hacia arriba
+        #e2,                     # Error de orientación general
         e3,
     ]
 
+    # Calcular la actualización de los valores de las articulaciones
     q = robot.get_q_values()
-    
-    q= generalized_task_augmentation(q, J_tasks, errors, deltaT=0.01, u=np.sqrt(0.001))
-    
+    q = generalized_task_augmentation(q, J_tasks, errors, deltaT=0.01, u=np.sqrt(0.001))
     robot.set_q_values(q[0])
 
+    # Publicar en ROS
     end_effector_position = T_desired[:3, 3]
-
-    # Crear y publicar el marcador de posición
     marker = create_marker(end_effector_position)
     marker_pub.publish(marker)
 
-    # Crear el mensaje JointState
     joint_state_msg = JointState()
     joint_state_msg.name = joint_names
     joint_state_msg.position = robot.get_publish_q_values().tolist()
     joint_state_msg.header.stamp = rospy.Time.now()
     joint_state_pub.publish(joint_state_msg)
-    #rospy.sleep(1)
+
     rate.sleep()

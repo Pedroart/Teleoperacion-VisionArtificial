@@ -36,15 +36,14 @@ class Robot:
             [-self.q[3] + sp.pi, 0.1685, 0, -sp.pi / 2],
             [self.q[4], 0.4, 0, -sp.pi / 2],
             [self.q[5] + sp.pi, 0.1363, 0, -sp.pi / 2],
-            [self.q[6] - sp.pi / 2, 0.11, 8.08E-07, 0],
-            [0, 0.1, 1, 0]
+            [self.q[6] - sp.pi / 2, 0.11, 8.08E-07, 0]
         ]
         
 
         
         # Precompute symbolic forward kinematics and Jacobians
-        self._tWrist_symbolic = self.cinematica_directa(self.params_dh[:7])
-        self._jWrist_symbolic = self.jacobiano(self.params_dh[:7])
+        self._tWrist_symbolic = self.cinematica_directa(self.params_dh[:5])
+        self._jWrist_symbolic = self.jacobiano(self.params_dh[:5])
 
         self._tScalpel_symbolic = self.cinematica_directa(self.params_dh)
         self._jScalpel_symbolic = self.jacobiano(self.params_dh)
@@ -72,7 +71,8 @@ class Robot:
     def update(self):
         # Evaluate matrices using lambdify functions
         self.tWrist = self.tWrist_func(*self.q_values)
-        self.jWrist = self.jWrist_func(*self.q_values)
+        zeros = np.zeros((6, 2))
+        self.jWrist = np.hstack((self.jWrist_func(*self.q_values), zeros))
 
         self.tScalpel = self.tScalpel_func(*self.q_values)
         self.jScalpel = self.jScalpel_func(*self.q_values)
@@ -157,23 +157,20 @@ class Robot:
         # Cálculo del Jacobiano utilizando derivadas parciales
         longitud = len(params_dh)
 
-        if(longitud >7):
-            longitud = 7
-
         for i in range(longitud):
             # Derivada parcial de la posición del efector con respecto a q_i (Jacobian lineal)
             Jv_i = p_n.diff(self.q[i])  # Derivada parcial de la posición con respecto a q_i
             J_linear.append(Jv_i)
             
-            z.append(T_total[:3, 2])
             '''# Derivada parcial de la orientación con respecto a q_i (Jacobian angular)
             R_i = T_list[i][:3, :3]  # Extrae la matriz de rotación hasta la articulación i
             R_efector = T_total[:3, :3]  # Matriz de rotación final del efector
             R_error = R_efector * R_i.T  # Rotación relativa entre el efector y el eje articular
             Jw_i = sp.Matrix([R_error[2, 1], R_error[0, 2], R_error[1, 0]])  # Representa la orientación como un vector de rotación
             J_angular.append(Jw_i)'''
-        J_angular = z[:longitud]
+            z.append(T_total[:3, 2])
         # Concatenar el Jacobiano lineal y angular
+        J_angular = z[:len(params_dh)]
         return sp.Matrix.vstack(sp.Matrix.hstack(*J_linear), sp.Matrix.hstack(*J_angular))
 
 
@@ -352,49 +349,34 @@ def calculate_orientation_error(T_link, desired_direction, link_axis=np.array([0
 
 desired_direction = np.array([0, 0, 1]) 
 
-point_wrist = np.array([0.8, 0.3, 0.1])
-point_elbow = np.array([0.3, 0.3, 0.5])
+T_desired = create_transformation_matrix(0.8, 0.3, 0.1)
+T_Scalpel = create_transformation_matrix(0.8, 0.3, 0.1)
 
-# Calcular el vector de dirección entre el codo y la muñeca
-vector_direction = point_wrist - point_elbow
-# Normalizar el vector para obtener el vector unitario
-unit_vector = (vector_direction / np.linalg.norm(vector_direction)) * 0.1
-unit_vector[2] = -1
+T_Elbow = create_transformation_matrix(0.3, 0.3, 0.5)
 
-point_Scalpel = point_wrist + unit_vector
-
-print(point_wrist,point_Scalpel)
-
-T_desired = create_transformation_matrix(*point_wrist)
-T_Elbow = create_transformation_matrix(*point_elbow)
-T_Scalpel = create_transformation_matrix(*point_Scalpel)
-
-
-
-kpp = 1;
+kpp = 0.1;
 kpr = 0.1;
 kpe = 1;
 
 while not rospy.is_shutdown():
     
+
     # Obtener la posición del efector final a partir de la cinemática directa
     T_end_effector = robot.tWrist  # Usamos la pose calculada en `update`
-    print(T_end_effector)
+    
     e = calculate_pose_error(robot.tWrist , T_desired)
     e1 = e[0:3]/kpp
-    e2 = calculate_orientation_error(robot.tWrist,desired_direction)
-    #e2 = e[0:3]/kpr
-    #e2 = calculate_pose_error(robot.tScalpel , T_Scalpel)[0:3]
+    #e = calculate_pose_error(robot.tScalpel , T_desired)
+    #e2 = e[3:]/kpr
+    e2 = calculate_orientation_error(robot.tScalpel,desired_direction)/kpr
 
     e = calculate_pose_error(robot.tElbow, T_Elbow)
     e3 = e[0:3]/kpe
-
+    print(e2)
     
     J1 = robot.jWrist[0:3]
-    #J2 = robot.jScalpel[0:3]
-    J2 = robot.jWrist[3:]
+    J2 = robot.jScalpel[3:]
     J3 = robot.jElbow[0:3]
-    print(e2)
 
 
     J_tasks = [
