@@ -349,10 +349,10 @@ def calculate_orientation_error(T_link, desired_direction, link_axis=np.array([0
 
 desired_direction = np.array([0, 0, 1]) 
 
-T_desired = create_transformation_matrix(0.8, 0.3, 0.1)
-T_Scalpel = create_transformation_matrix(0.8, 0.3, 0.1)
+T_desired = create_transformation_matrix(0.5, 0.3, 0.1)
+T_Scalpel = create_transformation_matrix(0.5, 0.3, 0.1)
 
-T_Elbow = create_transformation_matrix(0.3, 0.3, 0.5)
+T_Elbow = create_transformation_matrix(0.3, 0, 0.5)
 
 kpp = 0.1;
 kpr = 0.1;

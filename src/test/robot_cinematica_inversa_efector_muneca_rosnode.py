@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 
+import rospy
 import sympy as sp
 import numpy as np
 from scipy.spatial.transform import Rotation as R
-import time
-
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
-from std_msgs.msg import ColorRGBA
-
-import rospy
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import ColorRGBA, Float64MultiArray
 from sensor_msgs.msg import JointState
+
+import time
 
 # Decorator to measure execution time
 def timeit(func):
@@ -56,7 +54,6 @@ class Robot:
         self.jElbow_func = sp.lambdify(self.q, self._jElbow_symbolic, "numpy")
 
         self.q_values = [0] * 7
-        self.q_values[4] =  3
         self.update()
 
     @timeit
@@ -123,15 +120,6 @@ class Robot:
         J_angular = z[:len(params_dh)]
         return sp.Matrix.vstack(sp.Matrix.hstack(*J_linear), sp.Matrix.hstack(*J_angular))
 
-rospy.init_node("kinematics_visualizer")
-robot = Robot()
-
-marker_pub = rospy.Publisher("visualization_marker", Marker, queue_size=10)
-joint_state_pub = rospy.Publisher("joint_states", JointState, queue_size=10)
-rate = rospy.Rate(100) 
-
-joint_names = ["head_pan", "right_j0", "right_j1", "right_j2", "right_j3", "right_j4", "right_j5", "right_j6"]
-
 def create_marker(position, marker_id=0):
     marker = Marker()
     marker.header.frame_id = "base"
@@ -150,16 +138,6 @@ def create_marker(position, marker_id=0):
 
     return marker
 
-def calculate_pose_error(T_actual, T_desired):
-    position_actual = T_actual[:3, 3]
-    position_desired = T_desired[:3, 3]
-    position_error = position_desired - position_actual
-    R_actual = T_actual[:3, :3]
-    R_desired = T_desired[:3, :3]
-    R_error = R_desired @ R_actual.T  
-    rotation_vector = R.from_matrix(R_error).as_rotvec()
-    return np.concatenate((position_error, rotation_vector))
-
 def regularized_pseudoinverse(J, u=np.sqrt(0.001)):
     return J.T @ np.linalg.inv(J @ J.T + u**2 * np.eye(J.shape[0]))
 
@@ -174,25 +152,57 @@ def generalized_task_augmentation(q, J_tasks, errors, deltaT=1, u=np.sqrt(0.001)
 
     return q + q_dot * deltaT, q_dot
 
+point_Wrist = np.array([0.8, 0.3, 0.1])
+point_elbow = np.array([0.3, 0.3, 0.5])
+
+def callback_wrist(msg):
+    global point_Wrist
+    point_Wrist = np.array(msg.data)
+
+def callback_elbow(msg):
+    global point_elbow
+    point_elbow = np.array(msg.data)
+
+# Initialize ROS node
+rospy.init_node("kinematics_visualizer")
+
+# Initialize Robot object
+robot = Robot()
+
+# Publishers
+marker_pub = rospy.Publisher("visualization_marker", Marker, queue_size=10)
+joint_state_pub = rospy.Publisher("joint_states", JointState, queue_size=10)
+
+# Subscribers
+rospy.Subscriber("wrist_point", Float64MultiArray, callback_wrist)
+rospy.Subscriber("elbow_point", Float64MultiArray, callback_elbow)
+
+# Main loop
+rate = rospy.Rate(100)
+joint_names = ["head_pan", "right_j0", "right_j1", "right_j2", "right_j3", "right_j4", "right_j5", "right_j6"]
+desired_direction = np.array([0, 0, 3])
+kpp = 0.1
+kpr = 0.1
+kpe = 1
+
 def create_transformation_matrix(x, y, z):
-    """
-    Crea una matriz de transformación 4x4 con los valores de traslación especificados.
-
-    Parámetros:
-    x (float): Valor de traslación en el eje X.
-    y (float): Valor de traslación en el eje Y.
-    z (float): Valor de traslación en el eje Z.
-
-    Retorna:
-    np.ndarray: Matriz de transformación 4x4.
-    """
     T = np.array([
-        [0.0, 0.0, 1.0, x],
-        [1.0, -0.0, 0.0, y],
-        [0.0, 1.0, -0.0, z],
+        [-0.2, 0.8, 0.0, x],
+        [-0.8, 0.0, 0.0, y],
+        [0.0, 0.2, 1.0, z],
         [0.0, 0.0, 0.0, 1.0]
     ])
     return T
+
+def calculate_pose_error(T_actual, T_desired):
+    position_actual = T_actual[:3, 3]
+    position_desired = T_desired[:3, 3]
+    position_error = position_desired - position_actual
+    R_actual = T_actual[:3, :3]
+    R_desired = T_desired[:3, :3]
+    R_error = R_desired @ R_actual.T  
+    rotation_vector = R.from_matrix(R_error).as_rotvec()
+    return np.concatenate((position_error, rotation_vector))
 
 def calculate_orientation_error(T_link, desired_direction, link_axis=np.array([0, 1, 0])):
     """
@@ -215,27 +225,26 @@ def calculate_orientation_error(T_link, desired_direction, link_axis=np.array([0
     
     return orientation_error
 
-desired_direction = np.array([0, 0, 1])
-
-point_Wrist = np.array([0.8, -0.3, 0.1])
-point_elbow = np.array([0.3, -0.3, 0.5])
-
-T_desired = create_transformation_matrix(*point_Wrist)
-T_Elbow = create_transformation_matrix(*point_elbow)
-
-kpp = 0.1
-kpr = 0.1
-kpe = 1
-
 while not rospy.is_shutdown():
+    T_desired = create_transformation_matrix(*point_Wrist)
+    T_Elbow = create_transformation_matrix(*point_elbow)
+
     e = calculate_pose_error(robot.tWrist , T_desired)
     e1 = e[:3] / kpp
-    e2 = calculate_orientation_error(robot.tScalpel, desired_direction) / kpr
+    e2 = e[3:] / kpp
+
+    #print(robot.tScalpel)
+    #e2 = calculate_orientation_error(robot.tScalpel, desired_direction) / kpr
+    print(e2)
     e3 = calculate_pose_error(robot.tElbow, T_Elbow)[:3] / kpe
 
-    J_tasks = [robot.jWrist[:3], robot.jScalpel[3:], robot.jElbow[:3]]
+    J2 = robot.jScalpel[3:]
+    J2[:,0:4] = J2[:,0:4]*0
+    J_tasks = [robot.jWrist[:3], J2, robot.jElbow[:3]]
     errors = [e1, e2, e3]
 
+    #print(J2)
+    
     q, _ = generalized_task_augmentation(robot.get_q_values(), J_tasks, errors, deltaT=0.01)
     robot.set_q_values(q)
 
