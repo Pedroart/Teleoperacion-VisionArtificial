@@ -22,23 +22,24 @@ window_y = deque(maxlen=window_size)
 window_z = deque(maxlen=window_size)
 
 # Listas para almacenar posiciones de la muñeca para graficar en tiempo real
-wrist_positions_xy = []
 wrist_positions_yz = []
 
 # Configurar gráfico en tiempo real
 plt.ion()
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
-ax1.set_title('Wrist Trajectory - XY Plane')
-ax1.set_xlabel('X')
-ax1.set_ylabel('Y')
-ax1.set_xlim(-1, 1)
-ax1.set_ylim(-1, 1)
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5), gridspec_kw={'width_ratios': [1, 3]})
+
+# Configuración del indicador de nivel en el eje X
+ax1.set_title('X Level Indicator')
+ax1.set_xlim(0, 1)  # Mantener el indicador en un rango de 0 a 1 en el eje X
+ax1.set_ylim(0, 2)  # Ajustar para representar el rango de valores del eje X
+bar_x, = ax1.bar(0.5, 0, width=0.2, color='blue')  # Barra para el eje X
+
+# Configuración del plano YZ
 ax2.set_title('Wrist Trajectory - YZ Plane')
 ax2.set_xlabel('Y')
 ax2.set_ylabel('Z')
 ax2.set_xlim(-1, 1)
 ax2.set_ylim(-1, 1)
-line_xy, = ax1.plot([], [], 'b-')
 line_yz, = ax2.plot([], [], 'g-')
 
 # Definir ganancia para el eje X
@@ -84,9 +85,10 @@ with mp_pose.Pose(
         wrist_position, elbow_position = calculo_posiciones(results)
 
         if wrist_position is not None:
+            
             # Aplicar ganancia al eje X
-            x_pos = wrist_position[0] * ganancia_x
-            y_pos = wrist_position[1]
+            x_pos = wrist_position[0]
+            y_pos = -wrist_position[1] 
             z_pos = wrist_position[2]
 
             # Agregar posiciones actuales a las ventanas deslizantes
@@ -99,13 +101,16 @@ with mp_pose.Pose(
             y_filtrado = np.mean(window_y)
             z_filtrado = np.mean(window_z)
 
-            # Aplicar rotación de 45 grados al plano XY
-            rotated_xy = np.dot(rotation_matrix, np.array([x_filtrado, y_filtrado]))
-            x_rotado, y_rotado = rotated_xy[0], rotated_xy[1]
+            # Actualizar el indicador de nivel para el eje X
+            bar_x.set_height(x_filtrado)  # Ajustar la altura de la barra según el valor de X
 
-            # Publicar posiciones filtradas y rotadas de la muñeca y el codo
+            # Aplicar rotación de 45 grados al plano XY (si fuera necesario)
+            rotated_xy = np.dot(rotation_matrix, np.array([x_filtrado, y_filtrado]))
+            y_rotado = rotated_xy[1]
+
+            # Publicar posiciones filtradas de la muñeca y el codo
             wrist_msg = Float64MultiArray()
-            wrist_msg.data = [x_rotado, y_rotado, z_filtrado]
+            wrist_msg.data = [x_filtrado, y_filtrado, z_filtrado]
             wrist_pub.publish(wrist_msg)
 
             elbow_msg = Float64MultiArray()
@@ -113,20 +118,16 @@ with mp_pose.Pose(
             elbow_pub.publish(elbow_msg)
 
             # Agregar posiciones filtradas a las listas para graficar
-            wrist_positions_xy.append((x_rotado, y_rotado))  # X, Y rotados
             wrist_positions_yz.append((y_rotado, z_filtrado))  # Y rotado, Z
 
-            if len(wrist_positions_xy) > 50:
-                wrist_positions_xy.pop(0)
             if len(wrist_positions_yz) > 50:
                 wrist_positions_yz.pop(0)
 
-            # Actualizar líneas en el gráfico
-            line_xy.set_data([p[0] for p in wrist_positions_xy], [p[1] for p in wrist_positions_xy])
+            # Actualizar línea en el gráfico del plano YZ
             line_yz.set_data([p[0] for p in wrist_positions_yz], [p[1] for p in wrist_positions_yz])
 
-            # Redibujar solo las líneas actualizadas
-            ax1.draw_artist(line_xy)
+            # Redibujar solo las líneas actualizadas y la barra
+            ax1.draw_artist(bar_x)
             ax2.draw_artist(line_yz)
             fig.canvas.blit(ax1.bbox)
             fig.canvas.blit(ax2.bbox)

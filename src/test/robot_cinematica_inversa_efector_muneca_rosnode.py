@@ -157,7 +157,9 @@ point_elbow = np.array([0.3, 0.3, 0.5])
 
 def callback_wrist(msg):
     global point_Wrist
-    point_Wrist = np.array(msg.data)
+    escala = 0.5
+    a = np.array([msg.data[2]*escala+0.3,-msg.data[1]*escala,msg.data[0]*0+0.25])
+    point_Wrist = np.array(a)
 
 def callback_elbow(msg):
     global point_elbow

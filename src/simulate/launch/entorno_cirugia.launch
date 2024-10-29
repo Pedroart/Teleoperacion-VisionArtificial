@@ -20,7 +20,7 @@
   <node pkg="tf2_ros" type="static_transform_publisher" name="cube_to_world" args="0.75 0 0 0 0 0 1 world cube_link" />
 
   <!-- Static transform to position the small cube in the world -->
-  <node pkg="tf2_ros" type="static_transform_publisher" name="small_cube_to_world" args="0.65 0 0 0 0 0 1 world small_cube_link" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="small_cube_to_world" args="0.45 0 0 0 0 0 1 world small_cube_link" />
 
 
   <!-- Robot State Publisher -->
