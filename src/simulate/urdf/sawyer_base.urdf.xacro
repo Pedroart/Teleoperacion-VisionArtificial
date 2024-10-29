@@ -558,7 +558,7 @@
 
   <!-- Joint entre la mano y la esfera -->
   <joint name="right_hand_to_sphere_joint" type="fixed">
-    <origin rpy="1.573 0.3 3.14" xyz="0 0 0.05"/> <!-- Colocamos la esfera a 5 cm de la mano -->
+    <origin rpy="0 0 0" xyz="0 0 0.05"/> <!-- Colocamos la esfera a 5 cm de la mano -->
     <parent link="right_hand"/> <!-- La esfera está conectada a la mano -->
     <child link="right_hand_sphere"/> <!-- La esfera como hijo -->
   </joint>

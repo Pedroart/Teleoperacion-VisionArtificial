@@ -158,7 +158,7 @@ point_elbow = np.array([0.3, 0.3, 0.5])
 def callback_wrist(msg):
     global point_Wrist
     escala = 0.5
-    a = np.array([msg.data[2]*escala+0.3,-msg.data[1]*escala,msg.data[0]*0+0.25])
+    a = np.array([msg.data[2]*escala+0.3,-msg.data[1]*escala,msg.data[0]*0+0.2])
     point_Wrist = np.array(a)
 
 def callback_elbow(msg):
@@ -189,9 +189,9 @@ kpe = 1
 
 def create_transformation_matrix(x, y, z):
     T = np.array([
-        [-0.2, 0.8, 0.0, x],
-        [-0.8, 0.0, 0.0, y],
-        [0.0, 0.2, 1.0, z],
+        [0.0, 0.0, 1.0, x],
+        [1.0, -0.0, 0.0, y],
+        [0.0, 1.0, -0.0, z],
         [0.0, 0.0, 0.0, 1.0]
     ])
     return T
@@ -233,6 +233,7 @@ while not rospy.is_shutdown():
 
     e = calculate_pose_error(robot.tWrist , T_desired)
     e1 = e[:3] / kpp
+    e = calculate_pose_error(robot.tScalpel , T_desired)
     e2 = e[3:] / kpp
 
     #print(robot.tScalpel)
