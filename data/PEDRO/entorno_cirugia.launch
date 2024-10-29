@@ -1,0 +1,33 @@
+<?xml version="1.0" ?>
+<launch>
+  <!-- Load the URDF for the robot into the ROS Parameter Server -->
+  <param name="robot_description" command="$(find xacro)/xacro --inorder $(find Teleoperacion-VisionArtificial)/src/simulate/urdf/sawyer.urdf.xacro surgical_scalpel:=true" />
+
+  <!-- Load the URDF for the cube into the ROS Parameter Server -->
+  <param name="cube_description" command="$(find xacro)/xacro --inorder $(find Teleoperacion-VisionArtificial)/src/simulate/urdf/cube.xacro" />
+
+  <!-- Load the URDF for the small cube into the ROS Parameter Server -->
+  <param name="metodo_prueba" command="$(find xacro)/xacro --inorder $(find Teleoperacion-VisionArtificial)/src/simulate/urdf/metodo_prueba.xacro" />
+
+
+  <!-- Joint State Publisher -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+    
+  <!-- Static transform from world to robot base -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="test_base_to_world" args="0 0 0 0 0 0 1 world base" />
+
+  <!-- Static transform to position the cube in the world -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="cube_to_world" args="0.75 0 0 0 0 0 1 world cube_link" />
+
+  <!-- Static transform to position the small cube in the world -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="small_cube_to_world" args="0.55 0.1 0 0 0 0 1 world small_cube_link" />
+
+
+  <!-- Robot State Publisher -->
+  <node name="test_robot_state_publisher" type="robot_state_publisher" pkg="robot_state_publisher" output="screen"/>
+
+  
+  <!-- Launch RViz -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find Teleoperacion-VisionArtificial)/src/simulate/config/cirugia.rviz" required="true"/>
+
+</launch>
