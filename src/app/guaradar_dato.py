@@ -17,7 +17,7 @@ mp_pose = mp.solutions.pose
 cap = cv2.VideoCapture(0)
 
 # Tamaño de la ventana de media móvil
-window_size = 5  # Cambia este valor según la suavidad deseada
+window_size = 3  # Cambia este valor según la suavidad deseada
 
 # Deques para almacenar las últimas posiciones (ventanas deslizantes)
 window_x = deque(maxlen=window_size)
@@ -120,13 +120,13 @@ with open(f"/home/pedroart/dev_ws/src/Teleoperacion-VisionArtificial/data/wrist_
 
                 # Publicar posiciones filtradas de la muñeca y el codo
                 wrist_msg = Float64MultiArray()
-                escalaz = 0.3
-                escalay = 0.3
-                wrist_msg.data = [z_filtrado*escalaz+0.3, -y_filtrado*escalay, (x_filtrado<0.25)*0.25+0.29]
+                escalaz = 0.17
+                escalay = 0.2
+                wrist_msg.data = [z_filtrado*escalaz+0.4, -y_filtrado*escalay-0.05, (x_filtrado<0.25)*0.25+0.29]
                 
                 # Guardar en CSV con marca de tiempo
                 timestamp = time.time()
-                csv_writer.writerow([timestamp,z_filtrado*escalaz+0.3, -y_filtrado*escalay, (x_filtrado<0.25)*0.25+0.25])
+                csv_writer.writerow([timestamp,z_filtrado*escalaz+0.4, -y_filtrado*escalay-0.05, (x_filtrado<0.25)*0.25+0.25])
                 
                 wrist_pub.publish(wrist_msg)
                 

@@ -175,7 +175,7 @@ def create_marker(position, marker_id=0):
     marker.pose.position.y = position[1]
     marker.pose.position.z = position[2]
 
-    marker.scale.x = marker.scale.y = marker.scale.z = 0.01
+    marker.scale.x = marker.scale.y = marker.scale.z = 0.001
     marker.color = ColorRGBA(0.0, 1.0, 0.0, 1.0)
 
     return marker

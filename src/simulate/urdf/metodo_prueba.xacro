@@ -5,7 +5,7 @@
     <visual>
       <origin xyz="0 0 0.003" rpy="0 0 0"/> <!-- Colocar el cubo en el suelo (0.075m de altura) -->
       <geometry>
-        <box size="0.15 0.15 0.06"/> <!-- Tamaño del cubo: 15cm x 15cm x 15cm -->
+        <box size="0.1 0.1 0.06"/> <!-- Tamaño del cubo: 15cm x 15cm x 15cm -->
       </geometry>
       <material name="texture_material">
         <texture filename="package://Teleoperacion-VisionArtificial/src/simulate/urdf/pruebatecnica.png"/> <!-- Aplicar la textura -->
