@@ -3,9 +3,9 @@
   <!-- Definir un cubo pequeño de 15cm x 15cm con textura -->
   <link name="small_cube_link">
     <visual>
-      <origin xyz="0 0 0.003" rpy="0 0 0"/> <!-- Colocar el cubo en el suelo (0.075m de altura) -->
+      <origin xyz="0 0 -0.015" rpy="0 0 0"/> <!-- Colocar el cubo en el suelo (0.075m de altura) -->
       <geometry>
-        <box size="0.1 0.1 0.06"/> <!-- Tamaño del cubo: 15cm x 15cm x 15cm -->
+        <box size="0.1 0.1 0.03"/> <!-- Tamaño del cubo: 15cm x 15cm x 15cm -->
       </geometry>
       <material name="texture_material">
         <texture filename="package://Teleoperacion-VisionArtificial/src/simulate/urdf/pruebatecnica.png"/> <!-- Aplicar la textura -->

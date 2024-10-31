@@ -60,6 +60,9 @@ rotation_matrix = np.array([
     [np.sin(theta), np.cos(theta)]
 ])
 
+setx = 0.42
+sety = -0.13
+
 # Crear archivo CSV para almacenar las posiciones de la muñeca con marca de tiempo
 with open(f"/home/pedroart/dev_ws/src/Teleoperacion-VisionArtificial/data/wrist_positions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", mode="w", newline="") as csvfile:
     csv_writer = csv.writer(csvfile)
@@ -120,13 +123,14 @@ with open(f"/home/pedroart/dev_ws/src/Teleoperacion-VisionArtificial/data/wrist_
 
                 # Publicar posiciones filtradas de la muñeca y el codo
                 wrist_msg = Float64MultiArray()
-                escalaz = 0.17
-                escalay = 0.2
-                wrist_msg.data = [z_filtrado*escalaz+0.4, -y_filtrado*escalay-0.05, (x_filtrado<0.25)*0.25+0.29]
+                escalaz = 0.15
+                escalay = 0.18
+                print(setx)
+                wrist_msg.data = [z_filtrado*escalaz+setx, -y_filtrado*escalay+sety, (x_filtrado<0.25)*0.25*0+0.30]
                 
                 # Guardar en CSV con marca de tiempo
                 timestamp = time.time()
-                csv_writer.writerow([timestamp,z_filtrado*escalaz+0.4, -y_filtrado*escalay-0.05, (x_filtrado<0.25)*0.25+0.25])
+                csv_writer.writerow([timestamp,z_filtrado*escalaz+setx, -y_filtrado*escalay+sety, (x_filtrado<0.25)*0.25*0+0.30])
                 
                 wrist_pub.publish(wrist_msg)
                 
@@ -156,6 +160,12 @@ with open(f"/home/pedroart/dev_ws/src/Teleoperacion-VisionArtificial/data/wrist_
             # Cerrar con 'ESC'
             if cv2.waitKey(5) & 0xFF == 27:
                 break
+
+            if cv2.waitKey(5) & 0xFF == ord('r'):
+                print("Seteado")
+                setx = 0.45
+                
+                
 
 cap.release()
 cv2.destroyAllWindows()

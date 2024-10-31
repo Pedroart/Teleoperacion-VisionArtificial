@@ -70,6 +70,9 @@ def calculo_posiciones(results):
         return wrist_position, elbow_position
     return None, None
 
+errorx = 0
+errory = 0
+
 with mp_pose.Pose(
     min_tracking_confidence=0.7,
     min_detection_confidence=0.7,
@@ -143,6 +146,9 @@ with mp_pose.Pose(
         # Cerrar con 'ESC'
         if cv2.waitKey(5) & 0xFF == 27:
             break
+        if cv2.waitKey(5) & 0xFF == ord('r'):
+            print("Set 0,0")
+
 
 cap.release()
 cv2.destroyAllWindows()
