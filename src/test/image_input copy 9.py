@@ -11,7 +11,7 @@ mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
 # Configurar la cámara
-cap = cv2.VideoCapture(2)
+cap = cv2.VideoCapture(0)
 
 # Tamaño de la ventana de media móvil
 window_size = 5  # Cambia este valor según la suavidad deseada
@@ -70,6 +70,9 @@ def calculo_posiciones(results):
         return wrist_position, elbow_position
     return None, None
 
+errorx = 0
+errory = 0
+
 with mp_pose.Pose(
     min_tracking_confidence=0.7,
     min_detection_confidence=0.7,
@@ -110,8 +113,12 @@ with mp_pose.Pose(
 
             # Publicar posiciones filtradas de la muñeca y el codo
             wrist_msg = Float64MultiArray()
-            wrist_msg.data = [x_filtrado, y_filtrado, z_filtrado]
+            escalaz = 0.3
+            escalay = 0.3
+            wrist_msg.data = [z_filtrado*escalaz+0.3, -y_filtrado*escalay, (x_filtrado<0.25)*0.25+0.3]
+            
             wrist_pub.publish(wrist_msg)
+            
 
             elbow_msg = Float64MultiArray()
             elbow_msg.data = elbow_position.tolist()
@@ -139,6 +146,9 @@ with mp_pose.Pose(
         # Cerrar con 'ESC'
         if cv2.waitKey(5) & 0xFF == 27:
             break
+        if cv2.waitKey(5) & 0xFF == ord('r'):
+            print("Set 0,0")
+
 
 cap.release()
 cv2.destroyAllWindows()

@@ -21,6 +21,47 @@ def timeit(func):
         return result
     return wrapper
 
+class Efector:
+    def __init__(self):
+        self.q = sp.symbols('q1 q2 q3 q4 q5 q6 q7')
+        self.params_dh = [
+            [self.q[0], 0.317, 0.081, -sp.pi / 2],
+            [self.q[1] - sp.pi / 2, 0.1925, 0, -sp.pi / 2],
+            [self.q[2], 0.4, 0, -sp.pi / 2],
+            [-self.q[3] + sp.pi, 0.1685, 0, -sp.pi / 2],
+            [self.q[4], 0.4, 0, -sp.pi / 2],
+            [self.q[5] + sp.pi, 0.1363, 0, -sp.pi / 2],
+            [self.q[6] - sp.pi / 2, 0.11, 8.08E-07, 0],
+            [0, 0.15, 0, 0]
+        ]
+        self._tScalpel_symbolic = self.cinematica_directa(self.params_dh)
+        self.tScalpel_func = sp.lambdify(self.q, self._tScalpel_symbolic, "numpy")
+
+    @timeit
+    def update(self):
+        self.tScalpel = self.tScalpel_func(*self.q_values)
+
+    def set_q_values(self, q_array):
+        if len(q_array) != 7:
+            raise ValueError("Input array must have exactly 7 elements.")
+        self.q_values = q_array
+        self.update()
+    
+    def cinematica_directa(self, params_dh):
+        T_total = sp.eye(4)
+        for param in params_dh:
+            theta, d, a, alpha = param
+            T_total = T_total @ self.dh_matrix(theta, d, a, alpha)
+        return T_total
+    
+    def dh_matrix(self, theta, d, a, alpha):
+        return sp.Matrix([
+            [sp.cos(theta), -sp.sin(theta) * sp.cos(alpha), sp.sin(theta) * sp.sin(alpha), a * sp.cos(theta)],
+            [sp.sin(theta), sp.cos(theta) * sp.cos(alpha), -sp.cos(theta) * sp.sin(alpha), a * sp.sin(theta)],
+            [0, sp.sin(alpha), sp.cos(alpha), d],
+            [0, 0, 0, 1]
+        ])
+
 class Robot:
     def __init__(self):
         self.q = sp.symbols('q1 q2 q3 q4 q5 q6 q7')
@@ -133,7 +174,7 @@ def create_marker(position, marker_id=0):
     marker.pose.position.y = position[1]
     marker.pose.position.z = position[2]
 
-    marker.scale.x = marker.scale.y = marker.scale.z = 0.05
+    marker.scale.x = marker.scale.y = marker.scale.z = 0.01
     marker.color = ColorRGBA(0.0, 1.0, 0.0, 1.0)
 
     return marker
@@ -157,12 +198,11 @@ point_elbow = np.array([0.3, 0.3, 0.5])
 
 def callback_wrist(msg):
     global point_Wrist
-    escala = 0.5
-    a = np.array([msg.data[2]*escala+0.3,-msg.data[1]*escala,msg.data[0]*0+0.2])
-    point_Wrist = np.array(a)
+    point_Wrist = np.array(msg.data)
 
 def callback_elbow(msg):
     global point_elbow
+    escala = 0.3
     point_elbow = np.array(msg.data)
 
 # Initialize ROS node
@@ -170,6 +210,7 @@ rospy.init_node("kinematics_visualizer")
 
 # Initialize Robot object
 robot = Robot()
+efector = Efector()
 
 # Publishers
 marker_pub = rospy.Publisher("visualization_marker", Marker, queue_size=10)
@@ -189,8 +230,8 @@ kpe = 1
 
 def create_transformation_matrix(x, y, z):
     T = np.array([
-        [0.0, 0.0, 1.0, x],
-        [1.0, -0.0, 0.0, y],
+        [0.0, -0.0, 1.0, x],
+        [1.0, 0.0, 0.0, y],
         [0.0, 1.0, -0.0, z],
         [0.0, 0.0, 0.0, 1.0]
     ])
@@ -234,15 +275,13 @@ while not rospy.is_shutdown():
     e = calculate_pose_error(robot.tWrist , T_desired)
     e1 = e[:3] / kpp
     e = calculate_pose_error(robot.tScalpel , T_desired)
-    e2 = e[3:] / kpp
+    e2 = e[3:] / kpr
 
-    #print(robot.tScalpel)
-    #e2 = calculate_orientation_error(robot.tScalpel, desired_direction) / kpr
-    print(e2)
     e3 = calculate_pose_error(robot.tElbow, T_Elbow)[:3] / kpe
 
     J2 = robot.jScalpel[3:]
     J2[:,0:4] = J2[:,0:4]*0
+    J2[:,4] = J2[:,4]*10
     J_tasks = [robot.jWrist[:3], J2, robot.jElbow[:3]]
     errors = [e1, e2, e3]
 
@@ -250,8 +289,9 @@ while not rospy.is_shutdown():
     
     q, _ = generalized_task_augmentation(robot.get_q_values(), J_tasks, errors, deltaT=0.01)
     robot.set_q_values(q)
+    efector.set_q_values(q)
 
-    end_effector_position = T_desired[:3, 3]
+    end_effector_position = efector.tScalpel[:3, 3]
     marker_pub.publish(create_marker(end_effector_position))
 
     joint_state_msg = JointState()
