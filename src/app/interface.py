@@ -92,6 +92,9 @@ class Hand:
             rospy.logwarn("Handedness no válido. Debe ser 'Left' o 'Right'.")
             return (None,None)
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 class Interface:
 
     mp_drawing = mp.solutions.drawing_utils
@@ -112,6 +115,11 @@ class Interface:
         self.gesture = Gesture()
         self.gesture.add_gesture("Saludo", [1, 1, 0, 0, 1], self.changer_hand_control)
         self.gesture.add_gesture("Puntero", [1, 1, 1, 0, 0], self.punto)
+
+        # Configurar la gráfica 3D
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111, projection='3d')
+        plt.ion()  # Activar el modo interactivo
 
     def changer_hand_control(self):
         print(self.hand_control)
@@ -165,6 +173,29 @@ class Interface:
         #rospy.loginfo(f"Publicando posición: x={x}, y={y}, z={z}")
         self.pub.publish(point)
 
+    def plot_hand_3d(self, landmarks):
+        """
+        Actualiza el gráfico 3D con los landmarks de la mano.
+
+        :param landmarks: Lista de landmarks de la mano.
+        """
+        self.ax.clear()  # Limpia la gráfica anterior
+        x = [lm.x for lm in landmarks]
+        y = [lm.y for lm in landmarks]
+        z = [lm.z for lm in landmarks]
+
+        # Invertir ejes para que coincidan con el sistema de coordenadas de MediaPipe
+        self.ax.scatter(x, y, z, c='b', marker='o')  # Dibujar los puntos
+        self.ax.set_xlim([0, 1])
+        self.ax.set_ylim([0, 1])
+        self.ax.set_zlim([0, 1])
+        self.ax.set_xlabel('X')
+        self.ax.set_ylabel('Y')
+        self.ax.set_zlabel('Z')
+
+        plt.draw()  # Dibujar la gráfica
+        plt.pause(0.01)  # Pausa para actualizar
+
     def run(self):
         with self.mp_hands.Hands(
                 model_complexity=1,
@@ -191,7 +222,6 @@ class Interface:
                         self.hand.classify_hands(handedness, hand_landmarks.landmark)
 
                         if self.hand_control == handedness:
-
                             # Dibujar los landmarks en la self.imagen
                             self.mp_drawing.draw_landmarks(
                                 self.image,
@@ -200,8 +230,10 @@ class Interface:
                                 self.mp_drawing_styles.get_default_hand_landmarks_style(),
                                 self.mp_drawing_styles.get_default_hand_connections_style())
 
-                    self.landmarks,fingers = self.hand.get_hand_data(self.hand_control)
-                    #print(fingers)
+                            # Actualizar el plot 3D en tiempo real
+                            self.plot_hand_3d(hand_landmarks.landmark)
+
+                    self.landmarks, fingers = self.hand.get_hand_data(self.hand_control)
                     self.gesture.detect_gesture(fingers)
 
                 cv2.imshow('MediaPipe Hands', cv2.flip(self.image, 1))
@@ -209,6 +241,8 @@ class Interface:
                     break
                 self.rate.sleep()
         self.cap.release()
+        plt.ioff()  # Desactivar modo interactivo
+        plt.show()  # Mostrar la gráfica final
 
 if __name__ == '__main__':
     try:
