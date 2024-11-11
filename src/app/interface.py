@@ -18,20 +18,52 @@ Todo:
         - Dedo indice y medio como punteros
         - pausar cuando solo este el dedo indice
 '''
-class hand:
-    infer = [0, #pulgar
-             0, #indice
-             0, #medio
-             0, #anular
-             0  #menique
-            ]
-    
+class Hand:
+
     def __init__(self):
-        pass
+        self.left_hand = []
+        self.right_hand = []
+        self.left_fingers = [0, 0, 0, 0, 0]  
+        self.right_fingers = [0, 0, 0, 0, 0]
 
+    def classify_hands(self, handedness, landmark):
+        if handedness == "Left":
+            self.left_hand = landmark
+            self.left_fingers = self.detect_fingers(handedness,landmark)
+        elif handedness == "Right":
+            self.right_hand = landmark
+            self.right_fingers = self.detect_fingers(handedness,landmark)
+        else:
+            rospy.logwarn("Advertencia: Mano no identificada correctamente.")
     
+    def detect_fingers(self, handedness,landmarks):
+        """
+        Detecta qué dedos están levantados basándose en los landmarks.
 
-class interface:
+        :param landmarks: Lista de landmarks de la mano.
+        :return: Lista con el estado de los dedos (0: abajo, 1: levantado).
+        """
+        fingers = [0, 0, 0, 0, 0] 
+        tip_ids = [4, 8, 12, 16, 20]  # Índices de las puntas de los dedos
+
+        # Pulgar (comparación en eje x)
+        if handedness == "Left":
+            # Mano izquierda: el pulgar apunta hacia la izquierda si está levantado
+            if landmarks[tip_ids[0]].x > landmarks[tip_ids[0] - 1].x:
+                fingers[0] = 1
+        else:
+            # Mano derecha: el pulgar apunta hacia la derecha si está levantado
+            if landmarks[tip_ids[0]].x < landmarks[tip_ids[0] - 1].x:
+                fingers[0] = 1
+
+        # Índice, medio, anular y meñique (comparación en eje y)
+        for i in range(1, 5):
+            if landmarks[tip_ids[i]].y < landmarks[tip_ids[i] - 2].y:
+                fingers[i] = 1
+
+        return fingers
+
+class Interface:
 
     mp_drawing = mp.solutions.drawing_utils
     mp_drawing_styles = mp.solutions.drawing_styles
@@ -44,11 +76,7 @@ class interface:
 
         self.cap = cv2.VideoCapture(index=0)
 
-        desired_fps = 60
-        self.cap.set(cv2.CAP_PROP_FPS, desired_fps)
-        
-        actual_fps = self.cap.get(cv2.CAP_PROP_FPS)
-        print(f"FPS configurados: {60}, FPS reales: {actual_fps}")
+        self.hand = Hand()  # Instancia de la clase Hand
 
     def run(self):
         with self.mp_hands.Hands(
@@ -67,14 +95,24 @@ class interface:
                 
                 image.flags.writeable = True
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-                if results.multi_hand_landmarks:
-                    for hand_landmarks in results.multi_hand_landmarks:
+
+                if results.multi_hand_landmarks and results.multi_handedness:
+                    for idx, hand_landmarks in enumerate(results.multi_hand_landmarks):
+
+                        handedness = results.multi_handedness[idx].classification[0].label
+                         
+                        self.hand.classify_hands(handedness, hand_landmarks.landmark)
+
+                        # Dibujar los landmarks en la imagen
                         self.mp_drawing.draw_landmarks(
                             image,
                             hand_landmarks,
                             self.mp_hands.HAND_CONNECTIONS,
                             self.mp_drawing_styles.get_default_hand_landmarks_style(),
                             self.mp_drawing_styles.get_default_hand_connections_style())
+
+                print(self.hand.right_fingers)
+
 
                 cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
                 if cv2.waitKey(5) & 0xFF == 27:
@@ -84,7 +122,7 @@ class interface:
 
 if __name__ == '__main__':
     try:
-        app = interface()
+        app = Interface()
         app.run()
     except rospy.ROSInterruptException:
         pass
