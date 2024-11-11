@@ -1,5 +1,5 @@
 import rospy
-from std_msgs.msg import String
+from geometry_msgs.msg import Point
 
 import cv2
 import mediapipe as mp
@@ -13,11 +13,31 @@ Enviador datos:
 
 '''
 Todo:
-    - Detectar si los dedos estan estirados o no
+    - Detectar si los dedos estan estirados o no (si)
     - Detectar gestos como:
         - Dedo indice y medio como punteros
         - pausar cuando solo este el dedo indice
+    - Ver el caso de los dedos cuando una mano no se ve
 '''
+
+class Gesture:
+    def __init__(self):
+        self.gestures = {}
+    
+    def add_gesture(self, gesture_name, finger_state, action):
+        self.gestures[gesture_name] = {
+            "finger_state": finger_state,
+            "action": action
+        }
+
+    def detect_gesture(self, finger_state):
+        for gesture_name, gesture_info in self.gestures.items():
+            if gesture_info["finger_state"] == finger_state:
+                # Ejecuta la acción asociada al gesto
+                gesture_info["action"]()
+                return gesture_name
+        return None
+
 class Hand:
 
     def __init__(self):
@@ -28,11 +48,11 @@ class Hand:
 
     def classify_hands(self, handedness, landmark):
         if handedness == "Left":
-            self.left_hand = landmark
             self.left_fingers = self.detect_fingers(handedness,landmark)
+            self.left_hand = landmark
         elif handedness == "Right":
-            self.right_hand = landmark
             self.right_fingers = self.detect_fingers(handedness,landmark)
+            self.right_hand = landmark
         else:
             rospy.logwarn("Advertencia: Mano no identificada correctamente.")
     
@@ -63,6 +83,15 @@ class Hand:
 
         return fingers
 
+    def get_hand_data(self, handedness):
+        if handedness == "Left":
+            return (self.left_hand,self. left_fingers)
+        elif handedness == "Right":
+            return (self.right_hand, self.right_fingers)
+        else:
+            rospy.logwarn("Handedness no válido. Debe ser 'Left' o 'Right'.")
+            return (None,None)
+
 class Interface:
 
     mp_drawing = mp.solutions.drawing_utils
@@ -70,13 +99,71 @@ class Interface:
     mp_hands = mp.solutions.hands
 
     def __init__(self):
-        self.pub = rospy.Publisher('interface', String, queue_size=10)
-        rospy.init_node('pointer', anonymous=True)
+        self.pub = rospy.Publisher('pointer', Point, queue_size=10)
+        
+        rospy.init_node('interface', anonymous=True)
         self.rate = rospy.Rate(60)
 
         self.cap = cv2.VideoCapture(index=0)
 
+        self.hand_control = 'Right'
         self.hand = Hand()  # Instancia de la clase Hand
+        
+        self.gesture = Gesture()
+        self.gesture.add_gesture("Saludo", [1, 1, 0, 0, 1], self.changer_hand_control)
+        self.gesture.add_gesture("Puntero", [1, 1, 1, 0, 0], self.punto)
+
+    def changer_hand_control(self):
+        print(self.hand_control)
+        if self.hand_control == 'Left':
+            self.hand_control = 'Right'
+        elif self.hand_control == 'Right':
+            self.hand_control = 'Left'
+            print(self.hand_control)
+    
+    def punto(self):
+        """
+        Dibuja un círculo entre las puntas del dedo índice y medio.
+
+        :param self.image: self.imagen donde se dibujará el círculo (formato OpenCV).
+        :param landmarks: Lista de landmarks de la mano detectada.
+        """
+        # Índices de las puntas del dedo índice y medio
+        index_tip = 8
+        middle_tip = 12
+
+        # Coordenadas 3D de las puntas del dedo índice y medio
+        x1, y1, z1 = (
+            int(self.landmarks[index_tip].x * self.image.shape[1]), 
+            int(self.landmarks[index_tip].y * self.image.shape[0]), 
+            self.landmarks[index_tip].z * self.image.shape[1]
+        )
+        x2, y2, z2 = (
+            int(self.landmarks[middle_tip].x * self.image.shape[1]), 
+            int(self.landmarks[middle_tip].y * self.image.shape[0]), 
+            self.landmarks[middle_tip].z * self.image.shape[1]
+        )
+
+        # Calcular el punto medio entre las coordenadas 3D de ambos dedos
+        cx, cy, cz = (x1 + x2) // 2, (y1 + y2) // 2, (z1 + z2) / 2
+
+
+        self.publish_position(cx,cy,cz)
+
+        # Dibujar el círculo en el punto medio
+        cv2.circle(self.image, (cx, cy), 10, (0, 255, 0), cv2.FILLED)  # Color verde con relleno
+
+    def publish_position(self, x, y, z):
+        """
+        Publica la posición (x, y, z) en el tópico 'pointer'.
+        """
+        point = Point()
+        point.x = x
+        point.y = y
+        point.z = z
+
+        #rospy.loginfo(f"Publicando posición: x={x}, y={y}, z={z}")
+        self.pub.publish(point)
 
     def run(self):
         with self.mp_hands.Hands(
@@ -84,37 +171,40 @@ class Interface:
                 min_detection_confidence=0.5,
                 min_tracking_confidence=0.5) as hands:
             while not rospy.is_shutdown() and self.cap.isOpened():
-                success, image = self.cap.read()
+                success, self.image = self.cap.read()
                 if not success:
                     rospy.logwarn("Advertencia: No se detectó la cámara.")
                     continue
                 
-                image.flags.writeable = False
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                results = hands.process(image)
+                self.image.flags.writeable = False
+                self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+                results = hands.process(self.image)
                 
-                image.flags.writeable = True
-                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+                self.image.flags.writeable = True
+                self.image = cv2.cvtColor(self.image, cv2.COLOR_RGB2BGR)
 
                 if results.multi_hand_landmarks and results.multi_handedness:
                     for idx, hand_landmarks in enumerate(results.multi_hand_landmarks):
-
+                        
                         handedness = results.multi_handedness[idx].classification[0].label
-                         
+                        
                         self.hand.classify_hands(handedness, hand_landmarks.landmark)
 
-                        # Dibujar los landmarks en la imagen
-                        self.mp_drawing.draw_landmarks(
-                            image,
-                            hand_landmarks,
-                            self.mp_hands.HAND_CONNECTIONS,
-                            self.mp_drawing_styles.get_default_hand_landmarks_style(),
-                            self.mp_drawing_styles.get_default_hand_connections_style())
+                        if self.hand_control == handedness:
 
-                print(self.hand.right_fingers)
+                            # Dibujar los landmarks en la self.imagen
+                            self.mp_drawing.draw_landmarks(
+                                self.image,
+                                hand_landmarks,
+                                self.mp_hands.HAND_CONNECTIONS,
+                                self.mp_drawing_styles.get_default_hand_landmarks_style(),
+                                self.mp_drawing_styles.get_default_hand_connections_style())
 
+                    self.landmarks,fingers = self.hand.get_hand_data(self.hand_control)
+                    #print(fingers)
+                    self.gesture.detect_gesture(fingers)
 
-                cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
+                cv2.imshow('MediaPipe Hands', cv2.flip(self.image, 1))
                 if cv2.waitKey(5) & 0xFF == 27:
                     break
                 self.rate.sleep()
