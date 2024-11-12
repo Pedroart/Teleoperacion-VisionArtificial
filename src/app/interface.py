@@ -101,13 +101,15 @@ class Interface:
     mp_drawing_styles = mp.solutions.drawing_styles
     mp_hands = mp.solutions.hands
 
+    scx, scy, scz = (0,0,0)
+
     def __init__(self):
         self.pub = rospy.Publisher('pointer', Point, queue_size=10)
         
         rospy.init_node('interface', anonymous=True)
         self.rate = rospy.Rate(60)
 
-        self.cap = cv2.VideoCapture(index=0)
+        self.cap = cv2.VideoCapture(index=2)
 
         self.hand_control = 'Right'
         self.hand = Hand()  # Instancia de la clase Hand
@@ -115,20 +117,53 @@ class Interface:
         self.gesture = Gesture()
         self.gesture.add_gesture("Saludo", [1, 1, 0, 0, 1], self.changer_hand_control)
         self.gesture.add_gesture("Puntero", [1, 1, 1, 0, 0], self.punto)
+        self.gesture.add_gesture("Ajuste", [0, 1, 1, 0, 0], self.offset)
 
         # Configurar la gráfica 3D
-        self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111, projection='3d')
-        plt.ion()  # Activar el modo interactivo
+        #self.fig = plt.figure()
+        #self.ax = self.fig.add_subplot(111, projection='3d')
+        #plt.ion()  # Activar el modo interactivo
 
     def changer_hand_control(self):
-        print(self.hand_control)
+        #print(self.hand_control)
         if self.hand_control == 'Left':
             self.hand_control = 'Right'
         elif self.hand_control == 'Right':
             self.hand_control = 'Left'
             print(self.hand_control)
     
+    def offset(self):
+        """
+        Dibuja un círculo entre las puntas del dedo índice y medio.
+
+        :param self.image: self.imagen donde se dibujará el círculo (formato OpenCV).
+        :param landmarks: Lista de landmarks de la mano detectada.
+        """
+        # Índices de las puntas del dedo índice y medio
+        index_tip = 8
+        middle_tip = 12
+
+        # Coordenadas 3D de las puntas del dedo índice y medio
+        x1, y1, z1 = (
+            int(self.landmarks[index_tip].x * self.image.shape[1]), 
+            int(self.landmarks[index_tip].y * self.image.shape[0]), 
+            self.landmarks[index_tip].z * self.image.shape[1]
+        )
+        x2, y2, z2 = (
+            int(self.landmarks[middle_tip].x * self.image.shape[1]), 
+            int(self.landmarks[middle_tip].y * self.image.shape[0]), 
+            self.landmarks[middle_tip].z * self.image.shape[1]
+        )
+
+        # Calcular el punto medio entre las coordenadas 3D de ambos dedos
+        self.scx, self.scy, self.scz = (x1 + x2) // 2, (y1 + y2) // 2, (z1 + z2) / 2
+
+
+        #self.publish_position(self.scx,self.scy,self.scz)
+
+        # Dibujar el círculo en el punto medio
+        cv2.circle(self.image, (self.scx, self.scy), 10, (155, 0, 0), cv2.FILLED)     
+
     def punto(self):
         """
         Dibuja un círculo entre las puntas del dedo índice y medio.
@@ -156,10 +191,10 @@ class Interface:
         cx, cy, cz = (x1 + x2) // 2, (y1 + y2) // 2, (z1 + z2) / 2
 
 
-        self.publish_position(cx,cy,cz)
+        self.publish_position(cx-self.scx,cy-self.scy,cz-self.scz)
 
         # Dibujar el círculo en el punto medio
-        cv2.circle(self.image, (cx, cy), 10, (0, 255, 0), cv2.FILLED)  # Color verde con relleno
+        cv2.circle(self.image, (cx, cy), 10, (255, 0, 0), cv2.FILLED)  # Color verde con relleno
 
     def publish_position(self, x, y, z):
         """
@@ -223,6 +258,7 @@ class Interface:
 
                         if self.hand_control == handedness:
                             # Dibujar los landmarks en la self.imagen
+                            '''
                             self.mp_drawing.draw_landmarks(
                                 self.image,
                                 hand_landmarks,
@@ -232,6 +268,8 @@ class Interface:
 
                             # Actualizar el plot 3D en tiempo real
                             self.plot_hand_3d(hand_landmarks.landmark)
+                            '''
+                            pass
 
                     self.landmarks, fingers = self.hand.get_hand_data(self.hand_control)
                     self.gesture.detect_gesture(fingers)
