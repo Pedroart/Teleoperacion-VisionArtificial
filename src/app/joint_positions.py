@@ -10,6 +10,7 @@ from std_msgs.msg import Float64MultiArray
 cos=np.cos; sin=np.sin; pi=np.pi
 
 
+#
 def dh(d, theta, a, alpha):
     return np.array([
         [np.cos(theta), -np.sin(theta) * np.cos(alpha),  np.sin(theta) * np.sin(alpha), a * np.cos(theta)],
