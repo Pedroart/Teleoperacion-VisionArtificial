@@ -1,4 +1,1 @@
-rosrun Teleoperacion-VisionArtificial src/obtener_postura/obtener_postura.py
-rosrun Teleoperacion-VisionArtificial src/join.py
-roslaunch Teleoperacion-VisionArtificial entorno_cirugia.launch
-
+roslaunch ur_gazebo ur5_bringup.launch

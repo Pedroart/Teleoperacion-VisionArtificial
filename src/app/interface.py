@@ -39,7 +39,6 @@ class Gesture:
         return None
 
 class Hand:
-
     def __init__(self):
         self.left_hand = []
         self.right_hand = []
@@ -109,7 +108,7 @@ class Interface:
         rospy.init_node('interface', anonymous=True)
         self.rate = rospy.Rate(60)
 
-        self.cap = cv2.VideoCapture(index=2)
+        self.cap = cv2.VideoCapture(index=0)
 
         self.hand_control = 'Right'
         self.hand = Hand()  # Instancia de la clase Hand
@@ -190,8 +189,11 @@ class Interface:
         # Calcular el punto medio entre las coordenadas 3D de ambos dedos
         cx, cy, cz = (x1 + x2) // 2, (y1 + y2) // 2, (z1 + z2) / 2
 
-
-        self.publish_position(cx-self.scx,cy-self.scy,cz-self.scz)
+    
+        self.publish_position(
+                                ((cx-self.scx)*0.0050) ,
+                                ((cy-self.scy)*0.0050) ,
+                                ((cz-self.scz)*0.0050))
 
         # Dibujar el círculo en el punto medio
         cv2.circle(self.image, (cx, cy), 10, (255, 0, 0), cv2.FILLED)  # Color verde con relleno
