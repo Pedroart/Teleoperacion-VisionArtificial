@@ -199,7 +199,7 @@ OT = rot2quat(ToT[0:3,0:3])
 def callback(pointer):
     global q0,OT
     # Extraer posición deseada desde el mensaje recibido
-    xdes = np.array([pointer.x, pointer.y, pointer.z, *OT])  # Pose con orientación fija
+    xdes = np.array([pointer.x+0.3, pointer.y, pointer.z, *OT])  # Pose con orientación fija
     
     rospy.loginfo(f"Pose deseada recibida: {xdes}")
     

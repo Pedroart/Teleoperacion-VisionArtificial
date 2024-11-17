@@ -129,7 +129,7 @@ def generalized_task_augmentation(q, J_tasks, errors, deltaT=1, u=np.sqrt(0.001)
 # Control de pose hacia un objetivo
 def control_pose(robot, target_pose, pub):
     max_iter = 2100
-    epsilon = 1e-6
+    epsilon = 1e-4
 
     for i in range(max_iter):
         # Pose actual
