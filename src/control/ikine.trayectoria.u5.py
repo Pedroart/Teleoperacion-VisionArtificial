@@ -45,24 +45,25 @@ if __name__ == "__main__":
     end_pose = np.array([0.6, 0.0, 0.1, 0, 1, 0, 0])    # Pose final
     
     # Generar una lista de puntos intermedios
-    num_steps = 100  # Número de pasos en la trayectoria
+    num_steps = 10  # Número de pasos en la trayectoria
     trajectory = np.linspace(start_pose, end_pose, num_steps)
 
     rate = rospy.Rate(10)  # Frecuencia de publicación en Hz
 
-    while not rospy.is_shutdown():
-        for pose in trajectory:
-            # Resolver la cinemática inversa para cada punto en la trayectoria
-            q = ur5_robot.ikine_task(pose)
+    #while not rospy.is_shutdown():
+     
+    for pose in trajectory:
+        # Resolver la cinemática inversa para cada punto en la trayectoria
+        q = ur5_robot.ikine_task(pose)
 
-            if q is None:
-                rospy.logwarn("No se pudo resolver la cinemática inversa para la pose: {}".format(pose))
-                continue
+        if q is None:
+            rospy.logwarn("No se pudo resolver la cinemática inversa para la pose: {}".format(pose))
+            continue
 
-            # Llenar el mensaje con datos
-            joint_state_msg.header.stamp = rospy.Time.now()  # Marca de tiempo actual
-            joint_state_msg.position = q  # Asignar posiciones de articulaciones
-            
-            # Publicar el mensaje
-            joint_pub.publish(joint_state_msg)
-            rate.sleep()
+        # Llenar el mensaje con datos
+        joint_state_msg.header.stamp = rospy.Time.now()  # Marca de tiempo actual
+        joint_state_msg.position = q  # Asignar posiciones de articulaciones
+        
+        # Publicar el mensaje
+        joint_pub.publish(joint_state_msg)
+        rate.sleep()
