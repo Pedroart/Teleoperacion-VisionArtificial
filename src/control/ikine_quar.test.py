@@ -25,7 +25,7 @@ if __name__ == "__main__":
     
     
     #q = ur5_robot.ikine_task(np.array([0.6, 0.0, 0.1, 0, 1, 0, 0]))
-    q = ur5_robot.ikine_task(np.array([0.0, -0.4, 0.3]))
+    q = ur5_robot.ikine_task(np.array([0.3, -0.6, 0.3]))
     print(q)
     # Crear un mensaje JointState
     joint_state_msg = JointState()

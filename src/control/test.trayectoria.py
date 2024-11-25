@@ -15,11 +15,11 @@ def publish_trajectory_points():
     rate = rospy.Rate(1)  # Frecuencia de publicación (1 Hz)
     
     # Puntos de inicio y fin de la trayectoria
-    start_pose = np.array([0.0, -0.4, 0.3])  # Pose inicial (x, y, z)
+    start_pose = np.array([0.0, -0.6, 0.3])  # Pose inicial (x, y, z)
     end_pose = np.array([0.0, -0.8, 0.3])    # Pose final (x, y, z)
     
     # Número de pasos en la trayectoria
-    num_steps = 100
+    num_steps = 3
     trajectory = np.linspace(start_pose, end_pose, num_steps)  # Interpolar entre los puntos
     
     rospy.loginfo("Publicando trayectoria interpolada en /xyz_target...")

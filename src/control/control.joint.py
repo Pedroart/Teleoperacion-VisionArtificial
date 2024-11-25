@@ -19,16 +19,16 @@ def send_joint_positions(data):
         # Leer posiciones articulares del mensaje recibido
         joint_positions = data.data
 
-        if robot_client.get_state() in [GoalStatus.ACTIVE, GoalStatus.PENDING]:
+        '''if robot_client.get_state() in [GoalStatus.ACTIVE, GoalStatus.PENDING]:
             rospy.loginfo("Cancelando la meta actual...")
-            robot_client.cancel_goal()
+            robot_client.cancel_goal()'''
 
         # Crear y enviar una meta al controlador
         g = FollowJointTrajectoryGoal()
         g.trajectory = JointTrajectory()
         g.trajectory.joint_names = joint_names
         g.trajectory.points = [
-            JointTrajectoryPoint(positions=joint_positions, time_from_start=rospy.Duration(0.001))
+            JointTrajectoryPoint(positions=joint_positions, time_from_start=rospy.Duration(0.0001))
         ]
 
         robot_client.send_goal(g)
