@@ -1,0 +1,8 @@
+<launch>
+    <!-- Nodo para control en Gazebo -->
+    <node name="control_gazebo" pkg="Teleoperacion-VisionArtificial" type="control.joint.py" output="screen" />
+
+    <!-- Nodo para control del robot físico-->
+    <node name="robot_control" pkg="Teleoperacion-VisionArtificial" type="control.pose.py" output="screen" /> 
+</launch>
+

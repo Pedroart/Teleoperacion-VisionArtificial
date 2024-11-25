@@ -1,2 +1,10 @@
+Rviz
 roslaunch ur_gazebo ur5_bringup.launch
 roslaunch ur_description view_ur5.launch
+
+roslaunch ur_pkg ur5_base_gazebo.launchr
+Gazebo 
+rosrun Teleoperacion-VisionArtificial src/control/control.gazebo.py
+rosrun Teleoperacion-VisionArtificial src/control/robot.control.py
+
+

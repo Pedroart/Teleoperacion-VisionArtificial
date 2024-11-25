@@ -191,9 +191,9 @@ class Interface:
 
     
         self.publish_position(
-                                ((cx-self.scx)*0.0050) ,
-                                ((cy-self.scy)*0.0050) ,
-                                ((cz-self.scz)*0.0050))
+                                (-(cx-self.scx)*0.0009) ,
+                                (-(cy-self.scy)*0.0009) ,
+                                ((cz-self.scz)*0.0009))
 
         # Dibujar el círculo en el punto medio
         cv2.circle(self.image, (cx, cy), 10, (255, 0, 0), cv2.FILLED)  # Color verde con relleno
