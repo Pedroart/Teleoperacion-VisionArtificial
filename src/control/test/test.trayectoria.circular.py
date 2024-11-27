@@ -6,23 +6,28 @@ import numpy as np
 
 def publish_trajectory_points():
     """
-    Publica una secuencia de puntos en el tópico /xyz_target para probar el seguimiento de trayectoria.
+    Publica una secuencia de puntos en el tópico /xyz_target para probar el seguimiento de trayectoria circular.
     """
     rospy.init_node("trajectory_test_node", anonymous=True)
     
     # Crear el publicador para el tópico /xyz_target
     trajectory_pub = rospy.Publisher("/xyz_target", Point, queue_size=10)
-    rate = rospy.Rate(1)  # Frecuencia de publicación (1 Hz)
+    rate = rospy.Rate(2)  # Frecuencia de publicación (30 Hz)
     
-    # Puntos de inicio y fin de la trayectoria
-    start_pose = np.array([0.0, -0.6, 0.3])  # Pose inicial (x, y, z)
-    end_pose = np.array([0.0, -0.6, 0.3])    # Pose final (x, y, z)
+    # Parámetros del círculo
+    center_x = 0.1  # Centro en x
+    center_y = -0.7  # Centro en y
+    radius = 0.1  # Radio del círculo
+    num_steps = 100  # Número de puntos en la circunferencia
+    z_value = 0.15121768  # Coordenada z constante
+
+    # Calcular los puntos de la circunferencia
+    theta = np.linspace(0, 2 * np.pi, num_steps)  # Ángulos de 0 a 2π
+    trajectory = np.array([
+        [center_x + radius * np.cos(t), center_y + radius * np.sin(t), z_value] for t in theta
+    ])
     
-    # Número de pasos en la trayectoria
-    num_steps = 1
-    trajectory = np.linspace(start_pose, end_pose, num_steps)  # Interpolar entre los puntos
-    
-    rospy.loginfo("Publicando trayectoria interpolada en /xyz_target...")
+    rospy.loginfo("Publicando trayectoria circular en /xyz_target...")
     
     while not rospy.is_shutdown():
         for point in trajectory:

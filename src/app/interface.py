@@ -1,9 +1,11 @@
+#!/usr/bin/env python3
 import rospy
 from geometry_msgs.msg import Point
 
 import cv2
 import mediapipe as mp
-    
+import time
+import numpy as np
 
 '''
 Enviador datos:
@@ -23,7 +25,12 @@ Todo:
 class Gesture:
     def __init__(self):
         self.gestures = {}
-    
+        self.last_detected_gesture = None
+        self.gesture_start_time = None
+        self.gesture_end_time = None
+        self.detection_threshold = 0.2  # Tiempo mínimo en segundos para validar el gesto
+        self.reset_threshold = 0.5     # Tiempo mínimo sin detección para pasar a None
+
     def add_gesture(self, gesture_name, finger_state, action):
         self.gestures[gesture_name] = {
             "finger_state": finger_state,
@@ -31,11 +38,36 @@ class Gesture:
         }
 
     def detect_gesture(self, finger_state):
+        current_time = time.time()
+
+        # Verifica si algún gesto coincide con el estado de los dedos actual
         for gesture_name, gesture_info in self.gestures.items():
             if gesture_info["finger_state"] == finger_state:
-                # Ejecuta la acción asociada al gesto
-                gesture_info["action"]()
-                return gesture_name
+                # Si el mismo gesto fue detectado previamente
+                if self.last_detected_gesture == gesture_name:
+                    # Calcula cuánto tiempo lleva siendo consistente
+                    elapsed_time = current_time - self.gesture_start_time
+                    if elapsed_time >= self.detection_threshold:
+                        # Ejecuta la acción asociada al gesto
+                        gesture_info["action"]()
+                        return gesture_name
+                else:
+                    # Nuevo gesto detectado, reinicia el temporizador
+                    self.last_detected_gesture = gesture_name
+                    self.gesture_start_time = current_time
+                self.gesture_end_time = None  # Reinicia el fin del temporizador
+                return None  # No ejecuta hasta que pase el tiempo de detección
+
+        # Si no se detecta un gesto válido, manejar el temporizador de finalización
+        if self.last_detected_gesture:
+            if self.gesture_end_time is None:
+                self.gesture_end_time = current_time
+            elif current_time - self.gesture_end_time >= self.reset_threshold:
+                # Si el tiempo sin detección supera el umbral, reinicia
+                self.last_detected_gesture = None
+                self.gesture_start_time = None
+                self.gesture_end_time = None
+
         return None
 
 class Hand:
@@ -101,12 +133,15 @@ class Interface:
     mp_hands = mp.solutions.hands
 
     scx, scy, scz = (0,0,0)
+    linemax = 1
+    radio_trabajo = 150
 
     def __init__(self):
+        rospy.init_node('interface', anonymous=True)
+        
         self.pub = rospy.Publisher('pointer', Point, queue_size=10)
         
-        rospy.init_node('interface', anonymous=True)
-        self.rate = rospy.Rate(60)
+        self.rate = rospy.Rate(24)
 
         self.cap = cv2.VideoCapture(index=0)
 
@@ -114,9 +149,10 @@ class Interface:
         self.hand = Hand()  # Instancia de la clase Hand
         
         self.gesture = Gesture()
-        self.gesture.add_gesture("Saludo", [1, 1, 0, 0, 1], self.changer_hand_control)
+        self.gesture.add_gesture("Cambiar", [1, 1, 0, 0, 1], self.changer_hand_control)
         self.gesture.add_gesture("Puntero", [1, 1, 1, 0, 0], self.punto)
         self.gesture.add_gesture("Ajuste", [0, 1, 1, 0, 0], self.offset)
+        self.gesture.add_gesture("Radio", [1, 1, 0, 0, 0], self.ajuste)
 
         # Configurar la gráfica 3D
         #self.fig = plt.figure()
@@ -131,6 +167,40 @@ class Interface:
             self.hand_control = 'Left'
             print(self.hand_control)
     
+    def ajuste(self):
+        """
+        Dibuja un punto entre las puntas del dedo índice y pulgar, y una línea entre ellos.
+
+        :param self.image: self.imagen donde se dibujará el círculo y la línea (formato OpenCV).
+        :param landmarks: Lista de landmarks de la mano detectada.
+        """
+        # Índices de las puntas del dedo índice y pulgar
+        index_tip = 8
+        thumb_tip = 4
+
+        # Coordenadas 3D de las puntas del dedo índice y pulgar
+        x1, y1, z1 = (
+            int(self.landmarks[index_tip].x * self.image.shape[1]), 
+            int(self.landmarks[index_tip].y * self.image.shape[0]), 
+            self.landmarks[index_tip].z * self.image.shape[1]
+        )
+        x2, y2, z2 = (
+            int(self.landmarks[thumb_tip].x * self.image.shape[1]), 
+            int(self.landmarks[thumb_tip].y * self.image.shape[0]), 
+            self.landmarks[thumb_tip].z * self.image.shape[1]
+        )
+
+        line_length = ((x2 - x1)**2 + (y2 - y1)**2)**0.5
+        if(line_length>self.linemax):
+            self.linemax = line_length
+        
+        self.radio_trabajo = int(150 * line_length / self.linemax)
+        
+
+        # Dibujar la línea entre las puntas del índice y el pulgar
+        cv2.line(self.image, (x1, y1), (x2, y2), (0, 255, 0), 2)  # Línea verde con grosor 2
+
+
     def offset(self):
         """
         Dibuja un círculo entre las puntas del dedo índice y medio.
@@ -191,12 +261,13 @@ class Interface:
 
     
         self.publish_position(
-                                (-(cx-self.scx)*0.0009) ,
-                                (-(cy-self.scy)*0.0009) ,
-                                ((cz-self.scz)*0.0009))
+                                np.clip( (-(cx-self.scx)/self.radio_trabajo),-1.2, 1.2) ,
+                                np.clip( (-(cy-self.scy)/self.radio_trabajo),-1.2, 1.2) ,
+                                np.clip( ( (cz-self.scz)/self.radio_trabajo),-1.2, 1.2) )
 
         # Dibujar el círculo en el punto medio
         cv2.circle(self.image, (cx, cy), 10, (255, 0, 0), cv2.FILLED)  # Color verde con relleno
+           
 
     def publish_position(self, x, y, z):
         """
@@ -275,6 +346,18 @@ class Interface:
 
                     self.landmarks, fingers = self.hand.get_hand_data(self.hand_control)
                     self.gesture.detect_gesture(fingers)
+
+
+                # Crear una capa temporal para el círculo transparente
+                overlay = self.image.copy()
+                cv2.circle(overlay, (self.scx, self.scy), int(self.radio_trabajo*1.2), (128, 128, 0), -1)  # Dibuja el círculo en la capa temporal
+                cv2.circle(overlay, (self.scx, self.scy), self.radio_trabajo, (128, 128, 128), -1)  # Dibuja el círculo en la capa temporal
+
+
+                # Mezclar la capa temporal con la imagen original para el círculo transparente
+                alpha = 0.5  # Transparencia (0.5 para semitransparente)
+                cv2.addWeighted(overlay, alpha, self.image, 1 - alpha, 0, self.image)
+
 
                 cv2.imshow('MediaPipe Hands', cv2.flip(self.image, 1))
                 if cv2.waitKey(5) & 0xFF == 27:

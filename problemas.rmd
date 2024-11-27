@@ -1,0 +1,31 @@
+Problemas Identificados
+
+# GoalTime: Tiempo de Respuesta del Robot a la Meta
+
+## **Descripción del Problema**
+El robot tiene un tiempo de respuesta para alcanzar la meta "mover los joints" solicitado muy bajo. Actualmente, puede tardar hasta **1000ms**, lo cual es inaceptable para las necesidades del sistema.
+
+## **Impacto**
+- **Efecto en el sistema:** Baja eficiencia en el movimiento del robot.
+- **Experiencia del usuario:** Percepción de lentitud en el sistema.
+
+## **Análisis**
+- **Causas posibles:**
+  - Retrasos en la comunicación entre los componentes del sistema.
+  - Limitaciones en el hardware del robot.
+
+- **Datos relevantes:**
+  - Tiempo promedio actual: 1000ms.
+
+## **Soluciones Propuestas**
+1. Modificar los archivos de gazebo para que estas metas se cumplan en menos tiempo
+
+## **Próximos Pasos**
+- Realizar una medición detallada del tiempo en cada componente del sistema.
+- Implementar pruebas con algoritmos optimizados.
+- Evaluar la factibilidad de reemplazar hardware en caso necesario.
+
+---
+
+# Notas adicionales
+- El seguimiento de las mejoras se documentará en futuras versiones de este archivo.

@@ -80,7 +80,7 @@ class XYZToJointPositions:
                 rospy.loginfo(f"Procesando XYZ: {xyz}")
                 
                 # Resolver la cinemática inversa para obtener las posiciones articulares
-                self.robot._q = 
+                self.robot._q = []
                 q = self.robot.ikine_task(xyz)
                 self.sendq(q)
 
