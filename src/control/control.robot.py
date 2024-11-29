@@ -50,7 +50,8 @@ class ur5control():
         rospy.init_node("UR5Control", anonymous=True)
         
         self.robot_client = actionlib.SimpleActionClient('/ur5_robot/pos_joint_traj_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
-
+        self.robot_client = actionlib.SimpleActionClient('scaled_pos_joint_traj_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
+        
         print("Waiting for server...")
         self.robot_client.wait_for_server()
         print("Connected to server")
